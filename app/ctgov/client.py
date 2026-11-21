@@ -45,6 +45,23 @@ class FetchResult(BaseModel):
     def studies_analyzed(self) -> int:
         return len(self.studies)
 
+    @property
+    def truncation_note(self) -> str | None:
+        """The sentence the pipeline puts in notes.assumptions when capped.
+
+        It lives here because this is the only place that knows both numbers.
+        The point is to be explicit that a capped result is the API's first N
+        studies - not a sample - so nobody reads a 400-trial chart of a
+        604-trial search as representative. (The count intent sidesteps the
+        problem by answering from total_count instead.)
+        """
+        if not self.truncated:
+            return None
+        return (
+            f"Counted the first {len(self.studies)} of {self.total_count} "
+            "trials in API order; not a random sample."
+        )
+
 
 def _is_retryable(exc: BaseException) -> bool:
     """Timeouts, connection failures, and the server-side status codes."""
@@ -115,7 +132,10 @@ class CTGovClient:
     )
     async def _get_page(self, params: dict) -> dict:
         """One HTTP GET, retried up to three times on retryable failures."""
-        assert self._client is not None, "use CTGovClient as an async context manager"
+        if self._client is None:
+            # Not an assert: python -O would strip it and we would get an
+            # AttributeError on None instead of a sentence that says what to do.
+            raise RuntimeError("use CTGovClient as an async context manager")
         response = await self._client.get(self.base_url, params=params)
         response.raise_for_status()
         return response.json()

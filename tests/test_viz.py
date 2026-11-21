@@ -331,9 +331,36 @@ def test_title_names_the_filters_that_were_applied():
         )
     )
     assert "recruiting" in title.lower()
-    assert "pembrolizumab" in title
+    assert "pembrolizumab" in title.lower()
     assert "melanoma" in title
     assert "phase" in title.lower()
+
+
+def test_title_leads_with_the_entity_rather_than_the_word_trials():
+    """"Trials in breast cancer by phase" is awkward; a reader expects the
+    thing being studied first, capitalized."""
+    title = build_title(
+        plan(intent="distribution", filters={"condition": "breast cancer"}, group_by="phase")
+    )
+    assert title == "Breast cancer trials by phase"
+
+
+def test_title_capitalizes_the_entity_mid_sentence():
+    title = build_title(plan(intent="count", filters={"condition": "alzheimer", "status": ["RECRUITING"]}))
+    assert title == "Number of recruiting Alzheimer trials"
+
+
+def test_title_leaves_an_entity_that_is_already_capitalized_alone():
+    """str.title() and str.capitalize() would both mangle "BRCA1"."""
+    title = build_title(plan(intent="list", filters={"condition": "BRCA1 mutation"}))
+    assert title.startswith("BRCA1 mutation trials")
+
+
+def test_title_with_both_a_drug_and_a_condition_leads_with_the_drug():
+    title = build_title(
+        plan(intent="trend", filters={"drug": "pembrolizumab", "condition": "breast cancer"})
+    )
+    assert title == "Pembrolizumab trials in breast cancer per year"
 
 
 def test_title_includes_a_year_window():

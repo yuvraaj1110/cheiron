@@ -118,6 +118,26 @@ async def test_cap_stops_paging_and_sets_truncated(tmp_path):
     assert len(result.studies) == 10
     assert result.total_count == 5000
     assert result.truncated is True
+    assert result.truncation_note == (
+        "Counted the first 10 of 5000 trials in API order; not a random sample."
+    )
+
+
+async def test_an_untruncated_result_has_no_truncation_note(tmp_path):
+    """Nothing was left out, so there is nothing to disclaim."""
+    with respx.mock:
+        respx.get(BASE_URL).mock(return_value=httpx.Response(200, json=page(5, total=5)))
+        async with client(tmp_path) as c:
+            result = await c.fetch(PARAMS, max_studies=100)
+
+    assert result.truncated is False
+    assert result.truncation_note is None
+
+
+async def test_using_the_client_outside_its_context_manager_raises(tmp_path):
+    """A RuntimeError rather than an assert, which python -O would strip."""
+    with pytest.raises(RuntimeError, match="context manager"):
+        await client(tmp_path).fetch(PARAMS)
 
 
 async def test_page_size_never_exceeds_what_is_still_wanted(tmp_path):

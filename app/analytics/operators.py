@@ -24,7 +24,7 @@ from collections import defaultdict
 
 from pydantic import BaseModel, Field
 
-from app.ctgov.normalize import TrialRecord, phase_sort_key
+from app.ctgov.normalize import Intervention, TrialRecord, phase_sort_key
 from app.planner.plan import DIMENSIONS, Dimension, is_multi_valued
 
 # How many trials a table shows, and how many nodes a network keeps, unless
@@ -51,6 +51,18 @@ class OperatorResult(BaseModel):
 # --------------------------------------------------------------------------
 # Reading a dimension off a record
 # --------------------------------------------------------------------------
+
+
+# The intervention types that are actually drugs. The API's intervention list
+# also holds devices, procedures, behavioural arms and bookkeeping entries like
+# "Laboratory Biomarker Analysis"; calling those drugs made the network graph
+# wrong, so `drug` reads only these three types.
+DRUG_INTERVENTION_TYPES = frozenset({"DRUG", "BIOLOGICAL", "COMBINATION_PRODUCT"})
+
+
+def drug_interventions(record: TrialRecord) -> list[Intervention]:
+    """The record's interventions that count as drugs."""
+    return [i for i in record.interventions if i.type in DRUG_INTERVENTION_TYPES]
 
 
 def dimension_values(record: TrialRecord, dim: Dimension) -> list[tuple[str, str]]:
@@ -85,7 +97,7 @@ def dimension_values(record: TrialRecord, dim: Dimension) -> list[tuple[str, str
     if dim is Dimension.drug:
         # One pair per distinct key, labelled by the first spelling seen.
         seen: dict[str, str] = {}
-        for intervention in record.interventions:
+        for intervention in drug_interventions(record):
             seen.setdefault(intervention.key, intervention.name)
         return sorted(seen.items())
     if dim in (Dimension.enrollment, Dimension.duration_months):
@@ -166,14 +178,21 @@ def sort_key_for(dim: Dimension):
 # --------------------------------------------------------------------------
 
 
-def count(records: list[TrialRecord]) -> OperatorResult:
+def count(records: list[TrialRecord], total_count: int | None = None) -> OperatorResult:
     """How many trials. One row, one number.
 
-    Even this records contributors, so a bare "412" can still be traced to the
+    `total_count` is the API's own totalCount for the search. When the fetch
+    hit the study cap, that total is the honest answer and len(records) is not:
+    "how many recruiting Alzheimer's trials" is 604 even if we only downloaded
+    the first 400 of them. The downloaded records still supply the citations,
+    so the number stays checkable - just not exhaustively.
+
+    Even this records contributors, so a bare "604" can still be traced to
     trials behind it.
     """
+    answer = len(records) if total_count is None else total_count
     return OperatorResult(
-        rows=[{"trial_count": len(records)}],
+        rows=[{"trial_count": answer}],
         contributors={TOTAL_KEY: {r.nct_id for r in records}},
     )
 

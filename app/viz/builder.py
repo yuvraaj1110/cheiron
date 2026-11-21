@@ -158,9 +158,24 @@ def category_sort(dim: Dimension) -> str | list[str]:
 # about what the chart shows, so it has to follow from the filters mechanically.
 
 
+def capitalize_entity(text: str) -> str:
+    """"breast cancer" -> "Breast cancer", "alzheimer" -> "Alzheimer".
+
+    Only the first letter: the rest is left alone so "BRCA1" and "Pfizer Inc"
+    survive, which str.title() would mangle into "Brca1" and "Pfizer Inc".
+    """
+    return text[0].upper() + text[1:] if text else text
+
+
 def subject_phrase(plan: QueryPlan) -> str:
     """What the trials in this chart have in common, e.g. "recruiting
-    pembrolizumab trials in breast cancer"."""
+    Pembrolizumab trials in breast cancer".
+
+    The entity the question is about leads the phrase, so a title reads
+    "Breast cancer trials by phase" rather than "Trials in breast cancer by
+    phase". When both a drug and a condition are filtered the drug leads,
+    because "Pembrolizumab trials in breast cancer" is how people say it.
+    """
     filters = plan.filters
     parts = []
 
@@ -168,12 +183,14 @@ def subject_phrase(plan: QueryPlan) -> str:
         parts.append(filters.status[0].value.replace("_", " ").lower())
     if filters.phase and len(filters.phase) == 1:
         parts.append(filters.phase[0].value.replace("PHASE", "phase ").lower().strip())
-    if filters.drug:
-        parts.append(filters.drug)
+
+    lead = filters.drug or filters.condition
+    if lead:
+        parts.append(capitalize_entity(lead))
 
     subject = " ".join(parts + ["trials"])
 
-    if filters.condition:
+    if filters.drug and filters.condition:
         subject += f" in {filters.condition}"
     if filters.sponsor:
         subject += f" from {filters.sponsor}"
@@ -204,7 +221,9 @@ def build_title(plan: QueryPlan) -> str:
     if plan.intent is Intent.count:
         title = f"Number of {subject}{window}"
     elif plan.intent is Intent.list:
-        title = f"{subject}{window}".capitalize()
+        # No .capitalize() here: it lowercases the rest of the string, which
+        # would turn "BRCA1" into "Brca1". The first letter is raised below.
+        title = f"{subject}{window}"
     elif plan.intent is Intent.trend:
         title = f"{subject} per year{window}"
     elif plan.intent is Intent.comparison:

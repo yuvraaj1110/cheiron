@@ -36,8 +36,13 @@ def record(
     conditions: list[str] | None = None,
     enrollment: int | None = 100,
     duration_months: float | None = 12.0,
+    interventions: list[Intervention] | None = None,
 ) -> TrialRecord:
-    """A record with only the fields a given test cares about."""
+    """A record with only the fields a given test cares about.
+
+    `drugs` is the shorthand: names that become DRUG interventions. Pass
+    `interventions` instead when the test cares about the type.
+    """
     from app.ctgov.normalize import drug_key
 
     return TrialRecord(
@@ -51,9 +56,9 @@ def record(
         sponsor_class=sponsor_class,
         countries=countries or [],
         conditions=conditions or [],
-        interventions=[
-            Intervention(type="DRUG", name=d, key=drug_key(d)) for d in (drugs or [])
-        ],
+        interventions=interventions
+        if interventions is not None
+        else [Intervention(type="DRUG", name=d, key=drug_key(d)) for d in (drugs or [])],
         enrollment=enrollment,
         duration_months=duration_months,
     )
@@ -79,6 +84,22 @@ def test_count_of_nothing_is_zero_not_an_error():
 
 def test_even_a_single_number_is_citable():
     result = ops.count([record("NCT1"), record("NCT2")])
+    assert result.contributors["total"] == {"NCT1", "NCT2"}
+
+
+def test_count_answers_from_the_api_total_when_the_fetch_was_capped():
+    """The bug this test exists for: a search matching 604 trials whose fetch
+    stopped at 400 answered "400". The honest answer is the API's own total."""
+    records = [record(f"NCT{i}") for i in range(400)]
+    result = ops.count(records, total_count=604)
+    assert result.rows == [{"trial_count": 604}]
+
+
+def test_a_capped_count_is_still_cited_by_the_trials_we_downloaded():
+    """The number comes from the API; the evidence comes from the records, so
+    it is fewer than the count rather than none."""
+    records = [record("NCT1"), record("NCT2")]
+    result = ops.count(records, total_count=604)
     assert result.contributors["total"] == {"NCT1", "NCT2"}
 
 
@@ -188,6 +209,54 @@ def test_count_by_groups_drug_spellings_but_labels_them_verbatim():
     assert len(result.rows) == 1
     assert result.rows[0]["trial_count"] == 2
     assert result.rows[0]["drug"] in {"Pembrolizumab 200 mg", "pembrolizumab (MK-3475)"}
+
+
+def test_drug_ignores_interventions_that_are_not_drugs():
+    """The bug this test exists for: an NSCLC network graph showed
+    "Laboratory Biomarker Analysis" - an OTHER intervention - as a drug."""
+    from app.ctgov.normalize import drug_key
+
+    records = [
+        record(
+            "NCT1",
+            interventions=[
+                Intervention(type="DRUG", name="Pembrolizumab", key=drug_key("Pembrolizumab")),
+                Intervention(type="BIOLOGICAL", name="Nivolumab", key=drug_key("Nivolumab")),
+                Intervention(
+                    type="COMBINATION_PRODUCT",
+                    name="Drug-eluting stent",
+                    key=drug_key("Drug-eluting stent"),
+                ),
+                Intervention(type="PROCEDURE", name="Lobectomy", key=drug_key("Lobectomy")),
+                Intervention(
+                    type="OTHER",
+                    name="Laboratory Biomarker Analysis",
+                    key=drug_key("Laboratory Biomarker Analysis"),
+                ),
+                Intervention(type="DEVICE", name="Insulin pump", key=drug_key("Insulin pump")),
+            ],
+        )
+    ]
+    labels = {row["drug"] for row in ops.count_by(records, Dimension.drug).rows}
+    assert labels == {"Pembrolizumab", "Nivolumab", "Drug-eluting stent"}
+
+
+def test_a_trial_with_no_drug_interventions_is_dropped_not_counted():
+    """A surgery-only trial has no drug, so it cannot be a bar on a drug
+    chart; it is counted in `dropped` and reported in the notes."""
+    from app.ctgov.normalize import drug_key
+
+    records = [
+        record(
+            "NCT1",
+            interventions=[
+                Intervention(type="PROCEDURE", name="Lobectomy", key=drug_key("Lobectomy"))
+            ],
+        )
+    ]
+    result = ops.count_by(records, Dimension.drug)
+    assert result.rows == []
+    assert result.dropped == 1
 
 
 def test_count_by_counts_a_trial_once_per_drug_not_once_per_arm():

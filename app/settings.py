@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     planner_model: str = "gpt-4.1-mini"
     ctgov_base_url: str = "https://clinicaltrials.gov/api/v2/studies"
-    max_studies: int = 2000
+    max_studies: int = 10000
     cache_dir: str = ".cache"
 
 
