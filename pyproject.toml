@@ -35,4 +35,5 @@ include = ["app*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-asyncio_mode = "auto"
+asyncio_mode = "auto"              # async tests need no decorator
+asyncio_default_fixture_loop_scope = "function"  # the future default; set to keep output clean
