@@ -16,10 +16,12 @@ from pydantic import ValidationError
 
 from app.planner.plan import (
     DIMENSIONS,
+    REQUEST_FIELD_TO_PLAN_FILTER,
     Dimension,
     DimensionKind,
     Intent,
     Metric,
+    PlanFilters,
     QueryPlan,
     is_multi_valued,
     is_numeric,
@@ -234,3 +236,65 @@ def test_tool_schema_has_no_free_form_fields():
     for name, prop in schema["properties"].items():
         if prop.get("type") == "object":
             pytest.fail(f"{name} accepts a free-form object")
+
+
+def test_plan_filters_reject_a_backwards_year_window():
+    """The request already checks this, but the LLM fills these fields too."""
+    with pytest.raises(ValidationError):
+        QueryPlan(
+            intent="count",
+            filters={"start_year": 2020, "end_year": 2015},
+            interpretation="A window that runs backwards.",
+        )
+
+
+def test_time_window_rejects_a_backwards_range():
+    with pytest.raises(ValidationError):
+        QueryPlan(
+            intent="trend",
+            time={"granularity": "year", "start": 2020, "end": 2015},
+            interpretation="A trend over a backwards window.",
+        )
+
+
+def test_equal_years_allowed_on_plan_and_time():
+    """A single-year window is a real question on both sides."""
+    assert QueryPlan(
+        intent="count", filters={"start_year": 2020, "end_year": 2020}, interpretation="x"
+    ).filters.start_year == 2020
+    assert QueryPlan(
+        intent="trend", time={"start": 2020, "end": 2020}, interpretation="x"
+    ).time.end == 2020
+
+
+def test_request_to_filter_map_names_real_fields_on_both_sides():
+    """The map is the only place the request and plan field names are tied
+    together, so a rename on either side has to break this test."""
+    from app.api.schemas import VisualizationRequest
+
+    request_fields = set(VisualizationRequest.model_fields)
+    filter_fields = set(PlanFilters.model_fields)
+    for request_name, filter_name in REQUEST_FIELD_TO_PLAN_FILTER.items():
+        assert request_name in request_fields, f"{request_name} is not a request field"
+        assert filter_name in filter_fields, f"{filter_name} is not a plan filter"
+    # Every plan filter must be reachable from some request field, or a caller
+    # would have no way to override it.
+    assert set(REQUEST_FIELD_TO_PLAN_FILTER.values()) == filter_fields
+
+
+def test_phase_description_lists_all_eight_buckets():
+    """This text goes into the LLM system prompt and guides the normalizer, so
+    a missing bucket there becomes a missing bucket in the answer. PHASE2|PHASE3
+    and EARLY_PHASE1 both occur in the fixtures."""
+    description = DIMENSIONS[Dimension.phase].description
+    for bucket in [
+        "Early Phase 1",
+        "Phase 1",
+        "Phase 1/2",
+        "Phase 2",
+        "Phase 2/3",
+        "Phase 3",
+        "Phase 4",
+        "Not applicable",
+    ]:
+        assert bucket in description, f"{bucket} missing from the phase description"

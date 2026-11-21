@@ -14,6 +14,7 @@ import pytest
 from pydantic import TypeAdapter, ValidationError
 
 from app.api.schemas import (
+    Meta,
     VisualizationRequest,
     VisualizationResponse,
     VizSpec,
@@ -40,8 +41,12 @@ VALID_SPECS: dict[VizType, dict] = {
         "type": "table",
         "title": "Pembrolizumab trials",
         "encoding": {},
+        "columns": [
+            channel("nct_id", "nominal", "NCT ID"),
+            channel("phase_label", "ordinal", "Phase"),
+            channel("start_year", "temporal", "Start year"),
+        ],
         "data": [{"nct_id": "NCT03871959", "phase_label": "Phase 1", "start_year": 2019}],
-        "options": {"columns": ["nct_id", "phase_label", "start_year"]},
     },
     VizType.bar_chart: {
         "type": "bar_chart",
@@ -93,8 +98,8 @@ VALID_SPECS: dict[VizType, dict] = {
         "type": "network_graph",
         "title": "Sponsors and drugs in NSCLC trials",
         "encoding": {
-            "nodes": channel("id", "nominal", "Node"),
-            "edges": channel("weight", "quantitative", "Shared trials"),
+            "color": channel("type", "nominal", "Node kind"),
+            "size": channel("weight", "quantitative", "Trials"),
         },
         "data": {
             "nodes": [
@@ -137,8 +142,8 @@ INVALID_SPECS = [
     ("bar_chart with no x", _without_channel(VizType.bar_chart, "x")),
     ("grouped_bar_chart with no series", _without_channel(VizType.grouped_bar_chart, "series")),
     ("stat with no y", _without_channel(VizType.stat, "y")),
-    ("network_graph with no edges", _without_channel(VizType.network_graph, "edges")),
-    ("network_graph with no nodes", _without_channel(VizType.network_graph, "nodes")),
+    ("network_graph with no size", _without_channel(VizType.network_graph, "size")),
+    ("network_graph with no color", _without_channel(VizType.network_graph, "color")),
     # Wrong data shape, both directions.
     ("network data given as rows", {**VALID_SPECS[VizType.network_graph], "data": [{"a": 1}]}),
     (
@@ -158,9 +163,8 @@ INVALID_SPECS = [
             },
         },
     ),
-    # An edge pointing at nothing is not caught here - see the note in
-    # test_network_edge_endpoints_are_not_checked_by_the_schema below.
     ("missing title", {k: v for k, v in VALID_SPECS[VizType.bar_chart].items() if k != "title"}),
+    ("table with no columns", {k: v for k, v in VALID_SPECS[VizType.table].items() if k != "columns"}),
 ]
 
 
@@ -170,13 +174,11 @@ def test_invalid_spec_rejected(label, spec):
         SPEC.validate_python(spec)
 
 
-def test_network_edge_endpoints_are_not_checked_by_the_schema():
-    """Documents a real limit of the contract.
+def test_orphan_network_edge_rejected():
+    """An edge must connect nodes that exist in the same graph.
 
-    Pydantic cannot tell that an edge references a node that exists, so an
-    orphan edge validates here. The network operator in B3 only ever builds
-    edges between nodes it kept, which is where that invariant is enforced,
-    and its own test checks it.
+    Without this a frontend has to check every edge's ids resolve before it
+    can draw them, or it silently drops edges. Cheap to make impossible.
     """
     orphan = {
         **VALID_SPECS[VizType.network_graph],
@@ -185,7 +187,8 @@ def test_network_edge_endpoints_are_not_checked_by_the_schema():
             "edges": [{"source": "sponsor:merck", "target": "drug:nothing", "weight": 1}],
         },
     }
-    SPEC.validate_python(orphan)  # accepted, deliberately
+    with pytest.raises(ValidationError):
+        SPEC.validate_python(orphan)
 
 
 # --- the full response ----------------------------------------------------
@@ -208,7 +211,7 @@ def test_full_response_round_trips():
             "assumptions": ["Trials with no phase are shown as 'Not applicable'."],
         },
     )
-    assert response.meta.truncated is True
+    assert response.meta.truncated is True  # 17038 matched, 2000 analysed
     assert response.meta.source == "clinicaltrials.gov/api/v2"
     assert response.notes.overrides == []
     # The response must survive a JSON round trip, since that is how it ships.
@@ -283,3 +286,24 @@ def test_equal_start_and_end_year_allowed():
     """A single-year window is a legitimate question, not an off-by-one."""
     request = VisualizationRequest(query="a valid question", start_year=2020, end_year=2020)
     assert request.start_year == request.end_year == 2020
+
+
+def test_truncated_flag_must_match_the_counts():
+    """A response claiming nothing was left out while analysing 2000 of 17038
+    trials would understate the answer. Make it impossible, both ways."""
+    meta = {
+        "filters_applied": {},
+        "plan": {},
+        "total_matched": 17038,
+        "studies_analyzed": 2000,
+        "truncated": False,  # the lie
+        "chart_recommended": True,
+        "viz_rationale": "x",
+    }
+    with pytest.raises(ValidationError):
+        Meta(**meta)
+    with pytest.raises(ValidationError):
+        Meta(**{**meta, "total_matched": 2000, "truncated": True})
+    # Consistent either way is fine.
+    assert Meta(**{**meta, "truncated": True}).truncated is True
+    assert Meta(**{**meta, "total_matched": 2000, "truncated": False}).truncated is False

@@ -24,7 +24,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 # Phase and Status are reused from the request schema on purpose: the request,
 # the plan and the API all speak one vocabulary, so there is no place for the
 # three to drift apart.
-from app.api.schemas import Phase, Status
+from app.api.schemas import Phase, Status, check_year_order
 
 # --------------------------------------------------------------------------
 # 1. Vocabularies
@@ -117,7 +117,10 @@ DIMENSIONS: dict[Dimension, DimensionInfo] = {
         kind=DimensionKind.categorical,
         source_path="protocolSection.designModule.phases",
         multi_valued=False,
-        description="Trial phase, bucketed: Phase 1, Phase 1/2, Phase 2, Phase 3, Phase 4, Not applicable.",
+        description=(
+            "Trial phase, bucketed into one of eight: Early Phase 1, Phase 1, Phase 1/2, "
+            "Phase 2, Phase 2/3, Phase 3, Phase 4, Not applicable."
+        ),
     ),
     Dimension.status: DimensionInfo(
         kind=DimensionKind.categorical,
@@ -206,10 +209,12 @@ def is_multi_valued(dim: Dimension) -> bool:
 class PlanFilters(BaseModel):
     """Which trials to fetch.
 
-    These fields mirror the structured fields on VisualizationRequest one for
-    one. That is what makes the override rule a plain field-by-field
-    comparison in B4's validator: if the caller set `drug_name`, it replaces
-    `drug` here and the swap is recorded in notes.overrides.
+    These fields correspond to the structured fields on VisualizationRequest,
+    but the names are not identical: the request says `drug_name` where the
+    plan says `drug`. REQUEST_FIELD_TO_PLAN_FILTER below is the one place that
+    correspondence is written down, and B4's validator walks it to apply the
+    override rule - if the caller set `drug_name`, it replaces `drug` here and
+    the swap is recorded in notes.overrides.
 
     The string fields are free text because the API matches them as search
     terms. They hold entity names copied from the user's question - the LLM is
@@ -226,6 +231,29 @@ class PlanFilters(BaseModel):
     status: list[Status] | None = None
     start_year: int | None = Field(default=None, ge=1990, le=2035)
     end_year: int | None = Field(default=None, ge=1990, le=2035)
+
+    @model_validator(mode="after")
+    def years_in_order(self) -> "PlanFilters":
+        # The request checks this too, but the LLM fills these fields as well,
+        # so the same rule has to hold on this side of the boundary.
+        check_year_order(self.start_year, self.end_year, "start_year", "end_year")
+        return self
+
+
+# Request field -> plan filter field. Written down once here, rather than
+# assumed by matching names, because `drug_name` and `drug` do not match. B4's
+# validator walks this to apply the override rule, and a test asserts both
+# sides of every pair really exist.
+REQUEST_FIELD_TO_PLAN_FILTER: dict[str, str] = {
+    "drug_name": "drug",
+    "condition": "condition",
+    "sponsor": "sponsor",
+    "country": "country",
+    "phase": "phase",
+    "status": "status",
+    "start_year": "start_year",
+    "end_year": "end_year",
+}
 
 
 class CompareGroup(BaseModel):
@@ -261,6 +289,11 @@ class TimeSpec(BaseModel):
     granularity: str = Field(default="year", pattern="^year$")
     start: int | None = Field(default=None, ge=1990, le=2035)
     end: int | None = Field(default=None, ge=1990, le=2035)
+
+    @model_validator(mode="after")
+    def years_in_order(self) -> "TimeSpec":
+        check_year_order(self.start, self.end, "start", "end")
+        return self
 
 
 class QueryPlan(BaseModel):

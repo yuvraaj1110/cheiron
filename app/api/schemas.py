@@ -86,6 +86,17 @@ class ChannelType(str, Enum):
 # --------------------------------------------------------------------------
 
 
+def check_year_order(start: int | None, end: int | None, start_name: str, end_name: str) -> None:
+    """Raise if a year window runs backwards.
+
+    Defined once and reused by the request here and by the plan's filters and
+    time window in app/planner/plan.py, so a backwards window is impossible
+    whether it came from the caller or from the LLM.
+    """
+    if start is not None and end is not None and start > end:
+        raise ValueError(f"{start_name} must be <= {end_name}")
+
+
 class VisualizationRequest(BaseModel):
     """One question, plus optional structured filters.
 
@@ -125,8 +136,7 @@ class VisualizationRequest(BaseModel):
 
     @model_validator(mode="after")
     def years_in_order(self) -> "VisualizationRequest":
-        if self.start_year and self.end_year and self.start_year > self.end_year:
-            raise ValueError("start_year must be <= end_year")
+        check_year_order(self.start_year, self.end_year, "start_year", "end_year")
         return self
 
 
@@ -163,7 +173,13 @@ class Channel(BaseModel):
 
 class Encoding(BaseModel):
     """Which channels this chart uses. Every channel is optional here; each
-    viz type below declares the ones it actually requires."""
+    viz type below declares the ones it actually requires.
+
+    There is no `nodes` or `edges` channel. A channel names a field to read
+    out of the data, and for a network the nodes and edges are the data, so
+    such a channel would have nothing to point at. The network graph uses
+    `color` and `size` instead, which do name real node fields.
+    """
 
     x: Channel | None = None
     y: Channel | None = None
@@ -171,8 +187,6 @@ class Encoding(BaseModel):
     color: Channel | None = None
     size: Channel | None = None
     label: Channel | None = None
-    nodes: Channel | None = None
-    edges: Channel | None = None
 
 
 class NetworkNode(BaseModel):
@@ -195,6 +209,20 @@ class NetworkEdge(BaseModel):
 class NetworkData(BaseModel):
     nodes: list[NetworkNode]
     edges: list[NetworkEdge]
+
+    @model_validator(mode="after")
+    def edges_connect_known_nodes(self) -> "NetworkData":
+        """Every edge endpoint must be a node in this graph.
+
+        Cheap to check and it makes an unrenderable graph impossible: a
+        frontend can draw the edges without first checking the ids resolve.
+        """
+        ids = {node.id for node in self.nodes}
+        for edge in self.edges:
+            unknown = {edge.source, edge.target} - ids
+            if unknown:
+                raise ValueError(f"edge references unknown node(s): {sorted(unknown)}")
+        return self
 
 
 class _SpecBase(BaseModel):
@@ -237,10 +265,16 @@ class StatSpec(_SpecBase):
 
 
 class TableSpec(_SpecBase):
-    """Rows of trials. Columns come from options["columns"], not from encoding,
-    because a table has many columns and encoding only models a few channels."""
+    """Rows of trials.
+
+    Columns are their own typed field rather than an entry in `options`,
+    because a table has many columns and `encoding` only models a handful of
+    channels. Each column is a Channel, so a frontend reads a table's columns
+    exactly the way it reads a chart's axes - same shape, same field names.
+    """
 
     type: Literal[VizType.table] = VizType.table
+    columns: list[Channel] = Field(min_length=1)
     data: list[dict]
 
 
@@ -283,10 +317,15 @@ class ScatterPlotSpec(_SpecBase):
 
 
 class NetworkGraphSpec(_SpecBase):
-    """The one type whose data is not a list of rows."""
+    """The one type whose data is not a list of rows.
+
+    `color` names the node field that splits the two kinds of node apart
+    (`type`, e.g. sponsor vs drug) and `size` names the node field that sets
+    how big to draw it (`weight`). Both point at real NetworkNode fields.
+    """
 
     type: Literal[VizType.network_graph] = VizType.network_graph
-    required_channels: ClassVar[tuple[str, ...]] = ("nodes", "edges")
+    required_channels: ClassVar[tuple[str, ...]] = ("color", "size")
     data: NetworkData
 
 
@@ -322,6 +361,19 @@ class Meta(BaseModel):
     viz_rationale: str  # why this chart
     source: str = "clinicaltrials.gov/api/v2"
     timings_ms: dict[str, float] = Field(default_factory=dict)  # per stage
+
+    @model_validator(mode="after")
+    def truncated_matches_the_counts(self) -> "Meta":
+        """`truncated` is not an independent claim - it follows from the two
+        counts above. Enforced so the flag can never disagree with them and
+        quietly understate how much of the result was left out."""
+        expected = self.total_matched > self.studies_analyzed
+        if self.truncated != expected:
+            raise ValueError(
+                f"truncated={self.truncated} but total_matched={self.total_matched} "
+                f"and studies_analyzed={self.studies_analyzed} imply {expected}"
+            )
+        return self
 
 
 class Notes(BaseModel):

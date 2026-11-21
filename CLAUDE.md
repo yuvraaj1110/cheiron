@@ -35,7 +35,8 @@ notes: interpretation, assumptions[], overrides[]
 
 ## Data rules
 (Confirmed against the saved fixtures - see "Field paths" below.)
-- Phases: PHASE1|PHASE2 -> "Phase 1/2" as its own bucket; NA -> "Not applicable"; fixed sort order
+- Phases: eight buckets, in this sort order: Early Phase 1, Phase 1, Phase 1/2, Phase 2, Phase 2/3, Phase 3, Phase 4, Not applicable
+- Phases: a combination becomes its own bucket (PHASE1|PHASE2 -> "Phase 1/2", PHASE2|PHASE3 -> "Phase 2/3"), so each trial lands in exactly one bucket and counts sum to the trial total
 - Phases: observational studies have NO designModule.phases key at all (9-21% of a typical result). Same bucket as NA, "Not applicable"; say so in notes.assumptions
 - Dates: partial "YYYY-MM" is common (up to 39% of a result), so handle it; year = start date year; missing date = excluded, counted in notes
 - Countries: the API returns full names ("France", "United States"), NOT ISO codes. Use the name verbatim - no lookup table, so citation excerpts stay verbatim. A trial counts once per distinct country
