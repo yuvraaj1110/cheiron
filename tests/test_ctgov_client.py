@@ -13,7 +13,7 @@ import httpx
 import pytest
 import respx
 
-from app.ctgov.client import MAX_PAGE_SIZE, CTGovClient
+from app.ctgov.client import RETRY_ATTEMPTS, MAX_PAGE_SIZE, CTGovClient
 
 BASE_URL = "https://api.example.test/studies"
 PARAMS = {"query.intr": "pembrolizumab", "countTotal": "true"}
@@ -213,8 +213,8 @@ async def test_retries_a_timeout(tmp_path):
     assert len(result.studies) == 1
 
 
-async def test_gives_up_after_three_attempts(tmp_path):
-    """Three tries, then the real error surfaces rather than tenacity's
+async def test_gives_up_after_retry_attempts(tmp_path):
+    """RETRY_ATTEMPTS tries, then the real error surfaces rather than tenacity's
     wrapper, so the API layer can turn it into a clear 502."""
     with respx.mock:
         route = respx.get(BASE_URL).mock(return_value=httpx.Response(503))
@@ -222,7 +222,7 @@ async def test_gives_up_after_three_attempts(tmp_path):
             async with client(tmp_path) as c:
                 await c.fetch(PARAMS, max_studies=10)
 
-    assert route.call_count == 3
+    assert route.call_count == RETRY_ATTEMPTS
 
 
 async def test_does_not_retry_a_client_error(tmp_path):

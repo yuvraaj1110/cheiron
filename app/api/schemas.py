@@ -132,7 +132,8 @@ class VisualizationRequest(BaseModel):
     # A chart the caller would prefer. Honored only if it fits the result shape.
     viz_hint: VizType | None = None
 
-    max_studies: int = Field(default=2000, ge=1, le=5000)
+    # None = the server default (settings.max_studies, 10,000).
+    max_studies: int | None = Field(default=None, ge=1, le=10000)
 
     @model_validator(mode="after")
     def years_in_order(self) -> "VisualizationRequest":

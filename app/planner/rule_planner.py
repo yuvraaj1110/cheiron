@@ -39,10 +39,13 @@ from app.planner.plan import (
 # Checked top to bottom; the first pattern that matches the lowercased question
 # decides the intent. Comparison and distribution have extra logic in rule_plan.
 INTENT_CUES: list[tuple[Intent, str]] = [
+    # "how many ... each year" is a trend, so the trend check comes first for it.
+    (Intent.trend, r"how many .*(per year|each year|over time)"),
     (Intent.count, r"how many"),
     (Intent.list, r"\blist\b|which trials|show trials"),
     (Intent.network, r"network|co-occur|relationship|<->|together|combination"),
     (Intent.comparison, r" vs |versus|compare"),
+    (Intent.correlation, r"\bagainst\b"),
     (Intent.trend, r"per year|over time|trend|since \d{4}|each year"),
     (Intent.geo, r"countr|geograph|\bwhere\b|location"),
     (Intent.histogram, r"distribution of (enrollment|size|duration)"),
@@ -152,6 +155,64 @@ def find_year_window(text: str) -> tuple[int | None, int | None]:
     return None, None
 
 
+# --- unquoted names -------------------------------------------------------
+# A fallback planner still has to find "diabetes" in "trials for diabetes",
+# or it would search the whole registry. These patterns cover the common
+# phrasings; anything they miss is reported in assumptions, never guessed.
+
+NAME = r"[A-Za-z0-9][A-Za-z0-9'\-]*(?: [A-Za-z0-9][A-Za-z0-9'\-]*){0,4}"
+STOP_WORDS = {
+    "how", "many", "are", "is", "the", "a", "an", "all", "of", "for", "in", "with", "what", "which",
+    "show", "list", "me", "recruiting", "completed", "active", "phase", "trials", "studies", "number",
+    "has", "have", "do", "does", "there", "most", "top", "clinical", "involving", "compare", "this", "drug",
+    "plot", "distribution", "network", "sponsors", "drugs", "and", "countries", "frequently", "co-occur",
+    "changed", "started", "distributed", "combination", "each", "year", "per", "running", "conducted", "run",
+}
+DRUG_SUFFIXES = ("mab", "nib", "lib", "tide", "parin", "statin", "cillin", "mycin", "vir", "zole",
+                 "pril", "sartan", "olol", "platin", "taxel", "rubicin", "mide", "fene", "gliptin", "glutide")
+NAME_PATTERNS = [
+    re.compile(rf"\b(?:trials|studies) (?:for|of|in|on|involving|with) ({NAME}?)(?=\?|$|,| since | per | by | across | in | vs)", re.I),
+    re.compile(rf"\b(?:for|of|involving|with|in) ({NAME}?) (?:trials|studies)\b", re.I),
+    re.compile(rf"\bfor ({NAME}?)\??$", re.I),
+    re.compile(rf"\b({NAME}?) (?:trials|studies)\b", re.I),
+    re.compile(r"\b(?:co-occur|combined|combination) with ([A-Za-z0-9\-]+)", re.I),
+]
+VERSUS = re.compile(r"\b([A-Za-z0-9\-]+) (?:vs\.?|versus|and) ([A-Za-z0-9\-]+)\b", re.I)
+
+
+def kind_of(name: str) -> str:
+    """drug or condition, by drug-name suffix. Conditions are the default."""
+    return "drug" if name.lower().split()[-1].endswith(DRUG_SUFFIXES) else "condition"
+
+
+def trim(name: str) -> str | None:
+    words = name.split()
+    while words and words[0].lower() in STOP_WORDS:
+        words.pop(0)
+    while words and words[-1].lower() in STOP_WORDS:
+        words.pop()
+    return " ".join(words) or None
+
+
+def find_unquoted(query: str) -> list[tuple[str, str]]:
+    """Names written without quotes, as (name, kind). At most one per kind."""
+    found: dict[str, str] = {}
+    for pattern in NAME_PATTERNS:
+        for match in pattern.finditer(query):
+            name = trim(match.group(1))
+            if name and not name.isdigit():
+                found.setdefault(kind_of(name), name)
+    return [(name, kind) for kind, name in found.items()]
+
+
+def find_versus(query: str) -> list[str]:
+    """The two drug names in "X vs Y", when both look like drugs."""
+    match = VERSUS.search(query)
+    if match and all(kind_of(name) == "drug" for name in match.groups()):
+        return list(match.groups())
+    return []
+
+
 def find_quoted(query: str) -> list[tuple[str, str]]:
     """Quoted strings as (name, kind). Kind is "condition" when the quote
     follows "in " or "for ", otherwise "drug"."""
@@ -174,7 +235,8 @@ def build_compare_groups(request: VisualizationRequest, quoted: list[tuple[str, 
     if request.compare_with:
         main = request.drug_name or (quoted[0][0] if quoted else None)
         names = ([main] if main else []) + request.compare_with
-        return [group_for(name) for name in names]
+        unique = list({name.lower(): name for name in reversed(names)}.values())[::-1]  # first spelling wins
+        return [group_for(name) for name in unique]
     return [group_for(name, kind) for name, kind in quoted]
 
 
@@ -190,6 +252,9 @@ def rule_plan(request: VisualizationRequest) -> QueryPlan:
 
     start_year, end_year = find_year_window(text)
     quoted = find_quoted(request.query)
+    if not quoted:
+        versus = find_versus(request.query)
+        quoted = [(name, "drug") for name in versus] if intent == Intent.comparison and versus else find_unquoted(request.query)
     groups = build_compare_groups(request, quoted) if intent == Intent.comparison else []
     if intent == Intent.comparison and len(groups) < 2:
         intent = Intent.distribution
@@ -237,6 +302,9 @@ def rule_plan(request: VisualizationRequest) -> QueryPlan:
         plan.numeric_x = numeric[0] if numeric else Dimension.enrollment
     if intent == Intent.correlation:
         plan.numeric_x, plan.numeric_y = numeric[0], numeric[1]
+
+    if not (plan.filters.drug or plan.filters.condition or plan.filters.sponsor or plan.compare_groups):
+        assumptions.append("Rule planner: no drug, condition or sponsor found; searched all registered trials.")
 
     plan.interpretation = describe(plan)
     plan.assumptions = assumptions[:10]

@@ -231,7 +231,7 @@ def test_schema_generation_covers_every_viz_type():
 
 def test_minimal_request():
     request = VisualizationRequest(query="How many recruiting Alzheimer's trials are there?")
-    assert request.max_studies == 2000
+    assert request.max_studies is None  # server default applies
     assert request.phase is None
 
 
@@ -269,7 +269,7 @@ INVALID_REQUESTS = [
     ("year after 2035", {"query": "a valid question", "end_year": 2100}),
     ("start year after end year", {"query": "a valid question", "start_year": 2024, "end_year": 2015}),
     ("too many comparisons", {"query": "a valid question", "compare_with": ["a", "b", "c", "d", "e"]}),
-    ("max_studies above the cap", {"query": "a valid question", "max_studies": 9999}),
+    ("max_studies above the cap", {"query": "a valid question", "max_studies": 10001}),
     ("max_studies zero", {"query": "a valid question", "max_studies": 0}),
 ]
 

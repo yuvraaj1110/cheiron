@@ -1,0 +1,103 @@
+{
+  "request": {
+    "query": "How many recruiting Alzheimer's disease trials are there?"
+  },
+  "response": {
+    "visualization": {
+      "title": "Number of recruiting Alzheimer's disease trials",
+      "encoding": {
+        "x": null,
+        "y": {
+          "field": "trial_count",
+          "type": "quantitative",
+          "title": "Trials",
+          "sort": null,
+          "unit": "trials",
+          "format": null
+        },
+        "series": null,
+        "color": null,
+        "size": null,
+        "label": null
+      },
+      "options": {},
+      "type": "stat",
+      "data": [
+        {
+          "trial_count": 625,
+          "citation_count": 625,
+          "citations": [
+            {
+              "nct_id": "NCT07871487",
+              "title": "Tau Pathology in the Brain After Hip or Knee Replacement Surgery",
+              "field": "protocolSection.identificationModule.nctId",
+              "value": "NCT07871487",
+              "excerpt": "NCT07871487",
+              "url": "https://clinicaltrials.gov/study/NCT07871487"
+            },
+            {
+              "nct_id": "NCT07935629",
+              "title": "Implementing Brain Health PRO Across Diverse Settings: A Multi-Site Implementation Study",
+              "field": "protocolSection.identificationModule.nctId",
+              "value": "NCT07935629",
+              "excerpt": "NCT07935629",
+              "url": "https://clinicaltrials.gov/study/NCT07935629"
+            },
+            {
+              "nct_id": "NCT07923812",
+              "title": "Effectiveness and Safety of Disease-Modifying Therapy for Alzheimer's Disease: A Multicenter Retrospective Study",
+              "field": "protocolSection.identificationModule.nctId",
+              "value": "NCT07923812",
+              "excerpt": "NCT07923812",
+              "url": "https://clinicaltrials.gov/study/NCT07923812"
+            }
+          ]
+        }
+      ]
+    },
+    "meta": {
+      "filters_applied": {
+        "query.cond": "Alzheimer's disease",
+        "filter.overallStatus": "RECRUITING",
+        "fields": "protocolSection.identificationModule,protocolSection.statusModule",
+        "countTotal": "true"
+      },
+      "plan": {
+        "intent": "count",
+        "filters": {
+          "condition": "Alzheimer's disease",
+          "status": [
+            "RECRUITING"
+          ]
+        },
+        "metric": "trial_count",
+        "interpretation": "Rule-based reading: count of trials, condition Alzheimer's disease.",
+        "assumptions": [
+          "Rule planner: read \"Alzheimer's disease\" as a condition (low confidence)."
+        ]
+      },
+      "total_matched": 625,
+      "studies_analyzed": 625,
+      "truncated": false,
+      "chart_recommended": false,
+      "viz_rationale": "The question asks for a single number, so there is nothing to plot.",
+      "source": "clinicaltrials.gov/api/v2",
+      "timings_ms": {
+        "plan": 0.4,
+        "fetch": 400.2,
+        "normalize": 12.3,
+        "compute": 0.2,
+        "build": 0.2,
+        "cite": 0.4
+      }
+    },
+    "notes": {
+      "interpretation": "Rule-based reading: count of trials, condition Alzheimer's disease.",
+      "assumptions": [
+        "Rule planner: read \"Alzheimer's disease\" as a condition (low confidence).",
+        "No OpenAI key configured; used the rule planner."
+      ],
+      "overrides": []
+    }
+  }
+}

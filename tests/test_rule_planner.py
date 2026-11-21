@@ -76,10 +76,23 @@ def test_no_cue_defaults_to_phase_with_low_confidence_note():
     assert any("low confidence" in a and "phase" in a for a in plan.assumptions)
 
 
-def test_unquoted_words_never_become_entities():
+def test_unquoted_names_are_read_with_a_low_confidence_note():
+    # Without this the fallback would search all ~600k registered trials.
     plan = plan_for("How many pembrolizumab trials in melanoma?")
-    assert plan.filters.drug is None
-    assert plan.filters.condition is None
+    assert plan.filters.drug == "pembrolizumab"
+    assert plan.filters.condition == "melanoma"
+    assert any("low confidence" in note for note in plan.assumptions)
+
+
+def test_no_name_found_is_reported():
+    plan = plan_for("How are trials distributed across phases?")
+    assert plan.filters.drug is None and plan.filters.condition is None
+    assert any("searched all registered trials" in note for note in plan.assumptions)
+
+
+def test_duplicate_compare_names_collapse():
+    plan = plan_for("Compare pembrolizumab vs nivolumab", compare_with=["pembrolizumab", "nivolumab"])
+    assert [g.label for g in plan.compare_groups] == ["pembrolizumab", "nivolumab"]
 
 
 def test_request_fields_are_used_as_entities():

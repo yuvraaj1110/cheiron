@@ -32,6 +32,7 @@ MAX_PAGE_SIZE = 1000
 # Statuses worth retrying: rate limiting and the server's own failures. A 400
 # or 404 means our request was wrong, so retrying would just repeat it.
 RETRY_STATUS_CODES = {429, 500, 502, 503, 504}
+RETRY_ATTEMPTS = 6
 
 
 class FetchResult(BaseModel):
@@ -126,8 +127,10 @@ class CTGovClient:
 
     @retry(
         retry=retry_if_exception(_is_retryable),
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=0.5, max=4),
+        # ClinicalTrials.gov rate-limits bursts (HTTP 429, about 50 requests a
+        # minute), and a 10,000-study pull is 10 pages, so back off for real.
+        stop=stop_after_attempt(RETRY_ATTEMPTS),
+        wait=wait_exponential(multiplier=1, min=2, max=30),
         reraise=True,  # surface the real error, not tenacity's wrapper
     )
     async def _get_page(self, params: dict) -> dict:

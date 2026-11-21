@@ -1,0 +1,340 @@
+{
+  "request": {
+    "query": "How are breast cancer trials distributed across phases?"
+  },
+  "response": {
+    "visualization": {
+      "title": "Breast cancer trials by phase",
+      "encoding": {
+        "x": {
+          "field": "phase",
+          "type": "ordinal",
+          "title": "Phase",
+          "sort": [
+            "Early Phase 1",
+            "Phase 1",
+            "Phase 1/2",
+            "Phase 2",
+            "Phase 2/3",
+            "Phase 3",
+            "Phase 4",
+            "Not applicable"
+          ],
+          "unit": null,
+          "format": null
+        },
+        "y": {
+          "field": "trial_count",
+          "type": "quantitative",
+          "title": "Trials",
+          "sort": null,
+          "unit": "trials",
+          "format": null
+        },
+        "series": null,
+        "color": null,
+        "size": null,
+        "label": null
+      },
+      "options": {
+        "horizontal": false
+      },
+      "type": "bar_chart",
+      "data": [
+        {
+          "phase": "Not applicable",
+          "trial_count": 5068,
+          "citation_count": 5068,
+          "citations": [
+            {
+              "nct_id": "NCT07930715",
+              "title": "Feasibility Trial of a Culturally Tailored Resilience Intervention for Underserved Breast Cancer Survivors",
+              "field": "protocolSection.designModule.phases",
+              "value": "Not applicable",
+              "excerpt": "[\"NA\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07930715"
+            },
+            {
+              "nct_id": "NCT07946224",
+              "title": "Comparison of Breast Acoustic CT and Automated Breast Ultrasound in Women With Unilateral Untreated Breast Cancer",
+              "field": "protocolSection.designModule.phases",
+              "value": "Not applicable",
+              "excerpt": "[\"NA\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07946224"
+            },
+            {
+              "nct_id": "NCT07882420",
+              "title": "Role of Artificial Intelligence in Breast Cancer Screening Via Mammography",
+              "field": "protocolSection.designModule.phases",
+              "value": "Not applicable",
+              "excerpt": "[\"NA\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07882420"
+            }
+          ]
+        },
+        {
+          "phase": "Phase 2",
+          "trial_count": 2149,
+          "citation_count": 2149,
+          "citations": [
+            {
+              "nct_id": "NCT07950007",
+              "title": "ctDNA-Guided Neoadjuvant Therapy in HER2+ Breast Cancer",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 2",
+              "excerpt": "[\"PHASE2\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07950007"
+            },
+            {
+              "nct_id": "NCT07909889",
+              "title": "Semaglutide for Weight Management During Hormone Therapy for Early Breast Cancer",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 2",
+              "excerpt": "[\"PHASE2\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07909889"
+            },
+            {
+              "nct_id": "NCT07907354",
+              "title": "Low-Dose Apatinib Plus Chemotherapy in ADC-Pretreated HER2-Positive and HER2-Low Advanced Breast Cancer",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 2",
+              "excerpt": "[\"PHASE2\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07907354"
+            }
+          ]
+        },
+        {
+          "phase": "Phase 1",
+          "trial_count": 991,
+          "citation_count": 991,
+          "citations": [
+            {
+              "nct_id": "NCT06949410",
+              "title": "HER2 Vaccine for Locally Advanced Breast Cancer",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 1",
+              "excerpt": "[\"PHASE1\"]",
+              "url": "https://clinicaltrials.gov/study/NCT06949410"
+            },
+            {
+              "nct_id": "NCT07915297",
+              "title": "Safety and Biodistribution of [68Ga]Ga DOTA-5G in Subjects With Metastatic Breast Cancer (BC)",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 1",
+              "excerpt": "[\"PHASE1\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07915297"
+            },
+            {
+              "nct_id": "NCT07899892",
+              "title": "A Study of 68Ga-FAPI Breast PET/MRI Scans in People With Breast Cancer",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 1",
+              "excerpt": "[\"PHASE1\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07899892"
+            }
+          ]
+        },
+        {
+          "phase": "Phase 3",
+          "trial_count": 840,
+          "citation_count": 840,
+          "citations": [
+            {
+              "nct_id": "NCT07915739",
+              "title": "Internal Mammary Node Irradiation After Neoadjuvant Systemic Therapy for Breast Cancer",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 3",
+              "excerpt": "[\"PHASE3\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07915739"
+            },
+            {
+              "nct_id": "NCT07578116",
+              "title": "Adding Surgery and Radiation to the Usual Treatment for HER2-Positive Breast Cancer That Had Already Spread at Diagnosis",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 3",
+              "excerpt": "[\"PHASE3\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07578116"
+            },
+            {
+              "nct_id": "NCT07554573",
+              "title": "Assessment of Biosignature Classification of DCIS for RadioTherapy Benefit Post Lumpectomy (ABCD RT)",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 3",
+              "excerpt": "[\"PHASE3\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07554573"
+            }
+          ]
+        },
+        {
+          "phase": "Phase 1/2",
+          "trial_count": 511,
+          "citation_count": 511,
+          "citations": [
+            {
+              "nct_id": "NCT07861932",
+              "title": "A Phase 1/2a Study of K-1728 in Advanced Solid Tumors",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 1/2",
+              "excerpt": "[\"PHASE1\", \"PHASE2\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07861932"
+            },
+            {
+              "nct_id": "NCT07811232",
+              "title": "A Study of AL58805 in Advanced, Metastatic GYN, STS or Breast Cancers",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 1/2",
+              "excerpt": "[\"PHASE1\", \"PHASE2\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07811232"
+            },
+            {
+              "nct_id": "NCT07793656",
+              "title": "mRNA Therapy to Restore Lymphatic Flow in Secondary Lymphedema",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 1/2",
+              "excerpt": "[\"PHASE1\", \"PHASE2\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07793656"
+            }
+          ]
+        },
+        {
+          "phase": "Phase 4",
+          "trial_count": 206,
+          "citation_count": 206,
+          "citations": [
+            {
+              "nct_id": "NCT07859319",
+              "title": "Evaluation of the Efficacy and Acceptability of a Phytotherapy Combining Devil's Claw, Blackcurrant and Meadowsweet for the Management of Aromatase Inhibitor-induced Arthralgia in Patients Treated for Localized Breast Cancer in the Adjuvant Setting",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 4",
+              "excerpt": "[\"PHASE4\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07859319"
+            },
+            {
+              "nct_id": "NCT07802847",
+              "title": "Innovative and Cooperative Pathway Integrating Oncogeriatric, Pharmaceutical and Pharmacological Follow-up in Elderly Patients.",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 4",
+              "excerpt": "[\"PHASE4\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07802847"
+            },
+            {
+              "nct_id": "NCT07768358",
+              "title": "Tucatinib Continuation Study",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 4",
+              "excerpt": "[\"PHASE4\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07768358"
+            }
+          ]
+        },
+        {
+          "phase": "Early Phase 1",
+          "trial_count": 137,
+          "citation_count": 137,
+          "citations": [
+            {
+              "nct_id": "NCT04861077",
+              "title": "Monitoring Breast Cancer Immunotherapy Treatment With Advanced Positron Emission Tomography Magnetic Resonance Imaging (PET/MRI)",
+              "field": "protocolSection.designModule.phases",
+              "value": "Early Phase 1",
+              "excerpt": "[\"EARLY_PHASE1\"]",
+              "url": "https://clinicaltrials.gov/study/NCT04861077"
+            },
+            {
+              "nct_id": "NCT07781852",
+              "title": "Evaluation of the Distribution of 64Cu/68Ga Labeled CM500 in Healthy Volunteers and Patients With Cancer",
+              "field": "protocolSection.designModule.phases",
+              "value": "Early Phase 1",
+              "excerpt": "[\"EARLY_PHASE1\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07781852"
+            },
+            {
+              "nct_id": "NCT07671092",
+              "title": "Imaging Study in Metastatic UC, HR+ and HER2- Breast Cancer, TNBC, and NSCLC",
+              "field": "protocolSection.designModule.phases",
+              "value": "Early Phase 1",
+              "excerpt": "[\"EARLY_PHASE1\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07671092"
+            }
+          ]
+        },
+        {
+          "phase": "Phase 2/3",
+          "trial_count": 98,
+          "citation_count": 98,
+          "citations": [
+            {
+              "nct_id": "NCT07544056",
+              "title": "A Study of BEBT-209 Plus Chemotherapy in Patients With Locally Advanced or Metastatic Triple-Negative Breast Cancer",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 2/3",
+              "excerpt": "[\"PHASE2\", \"PHASE3\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07544056"
+            },
+            {
+              "nct_id": "NCT07366840",
+              "title": "RC48 Combined With Chemotherapy in HER2-Positive Advanced Breast Cancer Patients With Prior TOP1i-ADC Failure",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 2/3",
+              "excerpt": "[\"PHASE2\", \"PHASE3\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07366840"
+            },
+            {
+              "nct_id": "NCT07373782",
+              "title": "Continuous Positive Airway Pressure (CPAP) Assisted Radiotherapy in Breast Cancer",
+              "field": "protocolSection.designModule.phases",
+              "value": "Phase 2/3",
+              "excerpt": "[\"PHASE2\", \"PHASE3\"]",
+              "url": "https://clinicaltrials.gov/study/NCT07373782"
+            }
+          ]
+        }
+      ]
+    },
+    "meta": {
+      "filters_applied": {
+        "query.cond": "breast cancer",
+        "fields": "protocolSection.designModule,protocolSection.identificationModule,protocolSection.statusModule",
+        "countTotal": "true"
+      },
+      "plan": {
+        "intent": "distribution",
+        "filters": {
+          "condition": "breast cancer"
+        },
+        "metric": "trial_count",
+        "group_by": "phase",
+        "interpretation": "Rule-based reading: distribution of trials by phase, condition breast cancer.",
+        "assumptions": [
+          "Rule planner: no intent keyword found; treated as a distribution (low confidence).",
+          "Rule planner: read \"breast cancer\" as a condition (low confidence)."
+        ]
+      },
+      "total_matched": 17038,
+      "studies_analyzed": 10000,
+      "truncated": true,
+      "chart_recommended": true,
+      "viz_rationale": "One bar per category compares counts across a categorical dimension.",
+      "source": "clinicaltrials.gov/api/v2",
+      "timings_ms": {
+        "plan": 0.7,
+        "fetch": 5761.5,
+        "normalize": 543.7,
+        "compute": 8.2,
+        "build": 0.2,
+        "cite": 14.0
+      }
+    },
+    "notes": {
+      "interpretation": "Rule-based reading: distribution of trials by phase, condition breast cancer.",
+      "assumptions": [
+        "Rule planner: no intent keyword found; treated as a distribution (low confidence).",
+        "Rule planner: read \"breast cancer\" as a condition (low confidence).",
+        "No OpenAI key configured; used the rule planner.",
+        "Counted the first 10000 of 17038 trials in API order; not a random sample.",
+        "'Not applicable' phase includes observational trials, which have no phase."
+      ],
+      "overrides": []
+    }
+  }
+}
