@@ -1,0 +1,34 @@
+[project]
+name = "ctgov-viz"
+version = "0.1.0"
+description = "Turns a clinical-trials question into a visualization spec backed by ClinicalTrials.gov API v2."
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "httpx",
+    "pydantic>=2",
+    "pydantic-settings",
+    "anthropic",
+    "tenacity",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "respx",
+]
+
+# Installed with `pip install -e ".[dev]"`. Only the `app` package ships;
+# tests/, scripts/ and examples/ are run from the repo root, not imported.
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
