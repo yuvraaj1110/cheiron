@@ -12,7 +12,7 @@ request -> planner (LLM or rule fallback) -> validator/merger -> compiler (plan 
 - app/main.py: FastAPI; POST /v1/visualize, GET /health, GET /v1/schema
 - app/api/schemas.py: VisualizationRequest, VisualizationResponse, VizSpec, Encoding, Citation, Meta, Notes
 - app/planner/plan.py: QueryPlan, Dimension/Intent/Metric enums, DIMENSIONS catalog
-- app/planner/rule_planner.py, llm_planner.py, validator.py
+- app/planner/rule_planner.py, llm_planner.py (OpenAI structured outputs), validator.py
 - app/ctgov/compiler.py, client.py, normalize.py
 - app/analytics/operators.py
 - app/viz/builder.py
@@ -58,6 +58,9 @@ Base https://clinicaltrials.gov/api/v2/studies. Params: query.intr, query.cond, 
 
 ## Conventions
 - Python 3.11+, Pydantic v2, httpx async, type hints everywhere, no print debugging left in
+- LLM: OpenAI structured outputs (AsyncOpenAI, model from settings.planner_model, temperature 0).
+  The response_format IS the QueryPlan model, so the SDK validates the shape before we see it.
+  No other provider SDK in the project.
 - Tests: pytest, run `pytest -q -x`; unit tests use fixtures, never the live API
 - Keep functions small and pure in analytics/ and viz/
 - Commit at the end of each batch: "B<n>: <summary>"
