@@ -17,6 +17,8 @@ request -> planner (LLM or rule fallback) -> validator/merger -> compiler (plan 
 - app/analytics/operators.py
 - app/viz/builder.py
 - app/citations/attach.py
+- app/settings.py: every config value, read from .env (pydantic-settings)
+- scripts/fetch_fixtures.py: one-off script that downloads the fixtures below
 - tests/fixtures/*.json: saved API responses (large; inspect with python/jq, never cat)
 - examples/: real request/response pairs
 
@@ -38,6 +40,8 @@ notes: interpretation, assumptions[], overrides[]
 - Dates: partial "YYYY-MM" is common (up to 39% of a result), so handle it; year = start date year; missing date = excluded, counted in notes
 - Countries: the API returns full names ("France", "United States"), NOT ISO codes. Use the name verbatim - no lookup table, so citation excerpts stay verbatim. A trial counts once per distinct country
 - Any module can be absent: armsInterventionsModule, contactsLocationsModule.locations and designModule.enrollmentInfo.count are all missing on real studies. Normalizer must never assume a key exists
+- Drug names: lowercase key, strip dose/route text, keep display label
+- User structured fields override LLM-extracted filters; log each override in notes.overrides
 
 ## Field paths (verified against the live API, Nov 2026)
 - protocolSection.identificationModule.nctId / .briefTitle
@@ -47,8 +51,6 @@ notes: interpretation, assumptions[], overrides[]
 - protocolSection.conditionsModule.conditions (list of str)
 - protocolSection.armsInterventionsModule.interventions[].type / .name
 - protocolSection.contactsLocationsModule.locations[].country / .city / .facility
-- Drug names: lowercase key, strip dose/route text, keep display label
-- User structured fields override LLM-extracted filters; log each override in notes.overrides
 
 ## API
 Base https://clinicaltrials.gov/api/v2/studies. Params: query.intr, query.cond, query.spons, query.locn, filter.overallStatus, filter.advanced (AREA[Phase]PHASE3, AREA[StartDate]RANGE[2015-01-01,MAX]), fields (projection), pageSize=1000, pageToken, countTotal=true. Cap at MAX_STUDIES (default 2000).

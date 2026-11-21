@@ -1,6 +1,7 @@
 """Download a few real ClinicalTrials.gov responses and save them as test fixtures.
 
-Run once: python scripts/fetch_fixtures.py
+Run once: pip install -e ".[dev]" && python scripts/fetch_fixtures.py
+(The install is needed because this script imports `app.settings`.)
 
 Every unit test reads these saved files instead of calling the live API, so the
 test suite is fast, offline and gives the same answer every time.
@@ -80,7 +81,9 @@ def main() -> None:
 
     for filename, search_params in FIXTURES.items():
         data = fetch(search_params)
-        (FIXTURE_DIR / filename).write_text(json.dumps(data, indent=2))
+        # No indent: these are machine-read test inputs, and indenting them
+        # doubles the file size for no benefit.
+        (FIXTURE_DIR / filename).write_text(json.dumps(data))
         # Never print the data itself - these responses are thousands of lines.
         print(f"{filename}: totalCount={data['totalCount']} saved={len(data['studies'])}")
 
