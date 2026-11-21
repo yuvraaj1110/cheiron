@@ -25,16 +25,28 @@ Intents: count, list, distribution, trend, comparison, geo, network, histogram, 
 Dimensions: phase, status, start_year, sponsor, sponsor_class, country, intervention_type, drug, condition, study_type, enrollment (numeric), duration_months (numeric)
 Operators: count, list, count_by, time_series, compare, top_k, histogram, scatter, network. Every operator returns rows AND contributors: dict[datum_key, set[nct_id]].
 Viz types: stat, table, bar_chart, grouped_bar_chart, time_series, histogram, scatter_plot, network_graph
-Intent -> viz: count->stat, list->table, distribution->bar_chart, trend->time_series, comparison->grouped_bar_chart, geo->bar_chart (horizontal, ISO-3166 alpha-2 codes), network->network_graph, histogram->histogram, correlation->scatter_plot
+Intent -> viz: count->stat, list->table, distribution->bar_chart, trend->time_series, comparison->grouped_bar_chart, geo->bar_chart (horizontal, country names exactly as the API returns them), network->network_graph, histogram->histogram, correlation->scatter_plot
 Network data: {nodes:[{id,label,type,weight}], edges:[{source,target,weight,citations}]}
 Citation: {nct_id, field (API path), value, excerpt (verbatim from API record), url}
 meta: filters_applied, plan, total_matched, studies_analyzed, truncated, chart_recommended, viz_rationale, source, timings_ms
 notes: interpretation, assumptions[], overrides[]
 
 ## Data rules
+(Confirmed against the saved fixtures - see "Field paths" below.)
 - Phases: PHASE1|PHASE2 -> "Phase 1/2" as its own bucket; NA -> "Not applicable"; fixed sort order
-- Dates: partial "YYYY-MM" ok; year = start date year; missing date = excluded, counted in notes
-- Countries: a trial counts once per distinct country
+- Phases: observational studies have NO designModule.phases key at all (9-21% of a typical result). Same bucket as NA, "Not applicable"; say so in notes.assumptions
+- Dates: partial "YYYY-MM" is common (up to 39% of a result), so handle it; year = start date year; missing date = excluded, counted in notes
+- Countries: the API returns full names ("France", "United States"), NOT ISO codes. Use the name verbatim - no lookup table, so citation excerpts stay verbatim. A trial counts once per distinct country
+- Any module can be absent: armsInterventionsModule, contactsLocationsModule.locations and designModule.enrollmentInfo.count are all missing on real studies. Normalizer must never assume a key exists
+
+## Field paths (verified against the live API, Nov 2026)
+- protocolSection.identificationModule.nctId / .briefTitle
+- protocolSection.statusModule.overallStatus / .startDateStruct.date / .completionDateStruct.date
+- protocolSection.designModule.studyType / .phases (list) / .enrollmentInfo.count
+- protocolSection.sponsorCollaboratorsModule.leadSponsor.name / .class
+- protocolSection.conditionsModule.conditions (list of str)
+- protocolSection.armsInterventionsModule.interventions[].type / .name
+- protocolSection.contactsLocationsModule.locations[].country / .city / .facility
 - Drug names: lowercase key, strip dose/route text, keep display label
 - User structured fields override LLM-extracted filters; log each override in notes.overrides
 
