@@ -154,9 +154,10 @@ class Citation(BaseModel):
     """
 
     nct_id: str
+    title: str  # the trial's briefTitle, also verbatim
     field: str  # the API path the value came from
-    value: str  # the datum this citation supports, e.g. "Phase 3"
-    excerpt: str  # verbatim text from the API record
+    value: str  # the datum this citation supports, e.g. "Phase 1/2"
+    excerpt: str  # verbatim text from the API record at `field`
     url: str  # https://clinicaltrials.gov/study/<nct_id>
 
 
