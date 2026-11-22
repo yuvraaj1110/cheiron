@@ -20,6 +20,9 @@ request -> planner (LLM or rule fallback) -> validator/merger -> compiler (plan 
 - app/pipeline.py: wires the stages; app/static/demo.html: thin UI at /demo (vendored vega/d3)
 - app/settings.py: every config value, read from .env (pydantic-settings)
 - scripts/fetch_fixtures.py: one-off script that downloads the fixtures below
+- scripts/eval_planners.py: scores both planners on 15 fixed questions (plans only, no API calls);
+  writes examples/planner_eval.{json,md}. Questions are scored only on the plan fields their
+  intent's operator reads, with the operators' defaults resolved first
 - tests/fixtures/*.json: saved API responses (large; inspect with python/jq, never cat)
 - examples/: real request/response pairs
 

@@ -168,7 +168,7 @@ class Channel(BaseModel):
     field: str  # a key in the data rows, e.g. "phase_label"
     type: ChannelType
     title: str  # axis or legend label
-    sort: str | list[str] | None = None  # "-count", or an explicit order
+    sort: str | list[str] | None = None  # "-trial_count", or an explicit order
     unit: str | None = None  # "trials", "participants", "months"
     format: str | None = None  # number/date format hint
 

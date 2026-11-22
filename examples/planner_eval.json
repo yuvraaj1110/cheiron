@@ -1,0 +1,433 @@
+{
+  "questions": [
+    {
+      "id": "q01_count_plain",
+      "request": {
+        "query": "How many recruiting Alzheimer's disease trials are there?"
+      },
+      "expected": {
+        "intent": "count",
+        "condition": "alzheimer's disease",
+        "status": [
+          "RECRUITING"
+        ]
+      },
+      "note": ""
+    },
+    {
+      "id": "q02_count_phrased_as_total",
+      "request": {
+        "query": "What is the total number of completed trials sponsored by Pfizer?"
+      },
+      "expected": {
+        "intent": "count",
+        "sponsor": "pfizer",
+        "status": [
+          "COMPLETED"
+        ]
+      },
+      "note": "'total number of' instead of 'how many'."
+    },
+    {
+      "id": "q03_list",
+      "request": {
+        "query": "List phase 3 trials for pembrolizumab"
+      },
+      "expected": {
+        "intent": "list",
+        "drug": "pembrolizumab",
+        "phase": [
+          "PHASE3"
+        ]
+      },
+      "note": ""
+    },
+    {
+      "id": "q04_distribution_phase",
+      "request": {
+        "query": "How are breast cancer trials distributed across phases?"
+      },
+      "expected": {
+        "intent": "distribution",
+        "group_by": "phase",
+        "condition": "breast cancer"
+      },
+      "note": ""
+    },
+    {
+      "id": "q05_distribution_sponsor",
+      "request": {
+        "query": "Which sponsors run the most obesity trials?"
+      },
+      "expected": {
+        "intent": "distribution",
+        "group_by": "sponsor",
+        "condition": "obesity"
+      },
+      "note": "Needs sponsor, not the default phase grouping."
+    },
+    {
+      "id": "q06_distribution_sponsor_class",
+      "request": {
+        "query": "What share of melanoma trials are run by industry versus government?"
+      },
+      "expected": {
+        "intent": "distribution",
+        "group_by": "sponsor_class",
+        "condition": "melanoma"
+      },
+      "note": "'industry versus government' is the sponsor_class dimension, not a comparison of two drugs."
+    },
+    {
+      "id": "q07_trend_with_window",
+      "request": {
+        "query": "How many trials for pembrolizumab started each year since 2015?"
+      },
+      "expected": {
+        "intent": "trend",
+        "time_start": 2015,
+        "drug": "pembrolizumab"
+      },
+      "note": ""
+    },
+    {
+      "id": "q08_trend_no_window",
+      "request": {
+        "query": "Has interest in gene therapy trials grown over time?"
+      },
+      "expected": {
+        "intent": "trend",
+        "time_start": null,
+        "condition": "gene therapy"
+      },
+      "note": "A trend with no window given; time.start must stay empty rather than be invented."
+    },
+    {
+      "id": "q09_comparison_explicit",
+      "request": {
+        "query": "Compare phases for trials involving pembrolizumab vs nivolumab"
+      },
+      "expected": {
+        "intent": "comparison",
+        "group_by": "phase",
+        "compare_labels": [
+          "nivolumab",
+          "pembrolizumab"
+        ]
+      },
+      "note": ""
+    },
+    {
+      "id": "q10_comparison_structured",
+      "request": {
+        "query": "How do these two drugs compare by trial phase?",
+        "drug_name": "semaglutide",
+        "compare_with": [
+          "tirzepatide"
+        ]
+      },
+      "expected": {
+        "intent": "comparison",
+        "group_by": "phase",
+        "compare_labels": [
+          "semaglutide",
+          "tirzepatide"
+        ]
+      },
+      "note": "The entities arrive as structured fields, not in the question text."
+    },
+    {
+      "id": "q11_geo",
+      "request": {
+        "query": "Which countries have the most recruiting trials for diabetes?"
+      },
+      "expected": {
+        "intent": "geo",
+        "group_by": "country",
+        "condition": "diabetes",
+        "status": [
+          "RECRUITING"
+        ]
+      },
+      "note": ""
+    },
+    {
+      "id": "q12_network_bipartite",
+      "request": {
+        "query": "Show a network of sponsors and drugs for non-small cell lung cancer trials"
+      },
+      "expected": {
+        "intent": "network",
+        "node_dims": [
+          "drug",
+          "sponsor"
+        ],
+        "condition": "non-small cell lung cancer"
+      },
+      "note": ""
+    },
+    {
+      "id": "q13_network_cooccurrence",
+      "request": {
+        "query": "Which drugs frequently co-occur with pembrolizumab in combination studies?",
+        "drug_name": "pembrolizumab"
+      },
+      "expected": {
+        "intent": "network",
+        "node_dims": [
+          "drug",
+          "drug"
+        ],
+        "drug": "pembrolizumab"
+      },
+      "note": "Same dimension twice: a co-occurrence graph, not a bipartite one."
+    },
+    {
+      "id": "q14_histogram",
+      "request": {
+        "query": "What does the distribution of enrollment look like for Alzheimer's trials?"
+      },
+      "expected": {
+        "intent": "histogram",
+        "numeric_x": "enrollment",
+        "condition": "alzheimer's"
+      },
+      "note": "'distribution of enrollment' is a histogram over a numeric field, not a bar chart."
+    },
+    {
+      "id": "q15_correlation",
+      "request": {
+        "query": "Is enrollment related to study duration in obesity trials?"
+      },
+      "expected": {
+        "intent": "correlation",
+        "numeric_x": "enrollment",
+        "numeric_y": "duration_months",
+        "condition": "obesity"
+      },
+      "note": ""
+    }
+  ],
+  "results": [
+    {
+      "planner": "rule",
+      "totals": {
+        "status": "run",
+        "questions": 15,
+        "intent_correct": 13,
+        "intent_accuracy": 0.867,
+        "checks_passed": 39,
+        "checks_total": 47,
+        "check_accuracy": 0.83,
+        "exact_plans": 10,
+        "exact_plan_rate": 0.667,
+        "plan_errors": 0
+      },
+      "questions": [
+        {
+          "id": "q01_count_plain",
+          "query": "How many recruiting Alzheimer's disease trials are there?",
+          "intent_correct": true,
+          "checks_passed": 3,
+          "checks_total": 3,
+          "exact": true,
+          "failures": [],
+          "interpretation": "Rule-based reading: count of trials, condition Alzheimer's disease."
+        },
+        {
+          "id": "q02_count_phrased_as_total",
+          "query": "What is the total number of completed trials sponsored by Pfizer?",
+          "intent_correct": false,
+          "checks_passed": 1,
+          "checks_total": 3,
+          "exact": false,
+          "failures": [
+            {
+              "check": "intent",
+              "expected": "count",
+              "actual": "distribution"
+            },
+            {
+              "check": "sponsor",
+              "expected": "pfizer",
+              "actual": null
+            }
+          ],
+          "interpretation": "Rule-based reading: distribution of trials by phase, condition total."
+        },
+        {
+          "id": "q03_list",
+          "query": "List phase 3 trials for pembrolizumab",
+          "intent_correct": true,
+          "checks_passed": 3,
+          "checks_total": 3,
+          "exact": true,
+          "failures": [],
+          "interpretation": "Rule-based reading: list of trials, drug pembrolizumab."
+        },
+        {
+          "id": "q04_distribution_phase",
+          "query": "How are breast cancer trials distributed across phases?",
+          "intent_correct": true,
+          "checks_passed": 3,
+          "checks_total": 3,
+          "exact": true,
+          "failures": [],
+          "interpretation": "Rule-based reading: distribution of trials by phase, condition breast cancer."
+        },
+        {
+          "id": "q05_distribution_sponsor",
+          "query": "Which sponsors run the most obesity trials?",
+          "intent_correct": true,
+          "checks_passed": 3,
+          "checks_total": 3,
+          "exact": true,
+          "failures": [],
+          "interpretation": "Rule-based reading: distribution of trials by sponsor, condition obesity."
+        },
+        {
+          "id": "q06_distribution_sponsor_class",
+          "query": "What share of melanoma trials are run by industry versus government?",
+          "intent_correct": true,
+          "checks_passed": 2,
+          "checks_total": 3,
+          "exact": false,
+          "failures": [
+            {
+              "check": "group_by",
+              "expected": "sponsor_class",
+              "actual": "phase"
+            }
+          ],
+          "interpretation": "Rule-based reading: distribution of trials by phase, condition melanoma."
+        },
+        {
+          "id": "q07_trend_with_window",
+          "query": "How many trials for pembrolizumab started each year since 2015?",
+          "intent_correct": true,
+          "checks_passed": 3,
+          "checks_total": 3,
+          "exact": true,
+          "failures": [],
+          "interpretation": "Rule-based reading: trend of trials, drug pembrolizumab."
+        },
+        {
+          "id": "q08_trend_no_window",
+          "query": "Has interest in gene therapy trials grown over time?",
+          "intent_correct": true,
+          "checks_passed": 3,
+          "checks_total": 3,
+          "exact": true,
+          "failures": [],
+          "interpretation": "Rule-based reading: trend of trials, condition gene therapy."
+        },
+        {
+          "id": "q09_comparison_explicit",
+          "query": "Compare phases for trials involving pembrolizumab vs nivolumab",
+          "intent_correct": true,
+          "checks_passed": 3,
+          "checks_total": 3,
+          "exact": true,
+          "failures": [],
+          "interpretation": "Rule-based reading: comparison of trials by phase for pembrolizumab vs nivolumab."
+        },
+        {
+          "id": "q10_comparison_structured",
+          "query": "How do these two drugs compare by trial phase?",
+          "intent_correct": true,
+          "checks_passed": 2,
+          "checks_total": 3,
+          "exact": false,
+          "failures": [
+            {
+              "check": "group_by",
+              "expected": "phase",
+              "actual": "drug"
+            }
+          ],
+          "interpretation": "Rule-based reading: comparison of trials by drug for semaglutide vs tirzepatide, drug semaglutide."
+        },
+        {
+          "id": "q11_geo",
+          "query": "Which countries have the most recruiting trials for diabetes?",
+          "intent_correct": true,
+          "checks_passed": 4,
+          "checks_total": 4,
+          "exact": true,
+          "failures": [],
+          "interpretation": "Rule-based reading: geo of trials by country, condition diabetes."
+        },
+        {
+          "id": "q12_network_bipartite",
+          "query": "Show a network of sponsors and drugs for non-small cell lung cancer trials",
+          "intent_correct": true,
+          "checks_passed": 3,
+          "checks_total": 3,
+          "exact": true,
+          "failures": [],
+          "interpretation": "Rule-based reading: network of trials, condition non-small cell lung cancer."
+        },
+        {
+          "id": "q13_network_cooccurrence",
+          "query": "Which drugs frequently co-occur with pembrolizumab in combination studies?",
+          "intent_correct": true,
+          "checks_passed": 3,
+          "checks_total": 3,
+          "exact": true,
+          "failures": [],
+          "interpretation": "Rule-based reading: network of trials, drug pembrolizumab."
+        },
+        {
+          "id": "q14_histogram",
+          "query": "What does the distribution of enrollment look like for Alzheimer's trials?",
+          "intent_correct": true,
+          "checks_passed": 2,
+          "checks_total": 3,
+          "exact": false,
+          "failures": [
+            {
+              "check": "condition",
+              "expected": "alzheimer's",
+              "actual": "look like for alzheimer's"
+            }
+          ],
+          "interpretation": "Rule-based reading: histogram of trials, condition look like for Alzheimer's."
+        },
+        {
+          "id": "q15_correlation",
+          "query": "Is enrollment related to study duration in obesity trials?",
+          "intent_correct": false,
+          "checks_passed": 1,
+          "checks_total": 4,
+          "exact": false,
+          "failures": [
+            {
+              "check": "intent",
+              "expected": "correlation",
+              "actual": "distribution"
+            },
+            {
+              "check": "numeric_x",
+              "expected": "enrollment",
+              "actual": null
+            },
+            {
+              "check": "numeric_y",
+              "expected": "duration_months",
+              "actual": null
+            }
+          ],
+          "interpretation": "Rule-based reading: distribution of trials by phase, condition obesity."
+        }
+      ]
+    },
+    {
+      "planner": "llm",
+      "totals": {
+        "status": "not run",
+        "reason": "OPENAI_API_KEY not set"
+      },
+      "questions": []
+    }
+  ]
+}

@@ -23,6 +23,7 @@ tested Python over the fetched records.
 - [Response schema](#response-schema)
 - [Supported questions](#supported-questions)
 - [Avoiding hallucination](#avoiding-hallucination)
+- [Planner evaluation](#planner-evaluation)
 - [Design decisions and tradeoffs](#design-decisions-and-tradeoffs)
 - [Handling real-world API data](#handling-real-world-api-data)
 - [Example runs](#example-runs)
@@ -69,8 +70,9 @@ curl -s localhost:8000/v1/visualize -H 'content-type: application/json' \
 | `MAX_STUDIES` | `10000` | Cap on trials pulled per search |
 | `CACHE_DIR` | `.cache` | On-disk cache of API pages |
 
-Run the tests with `pytest -q` (467 tests, about 2 seconds, no network).
-Regenerate the example outputs with `python scripts/run_examples.py`.
+Run the tests with `pytest -q` (504 tests, about 2 seconds, no network).
+Regenerate the example outputs with `python scripts/run_examples.py`, and the
+planner scores with `python scripts/eval_planners.py`.
 
 ---
 
@@ -293,6 +295,45 @@ are a new operator plus one row in the intent → chart table, with no special c
 
 ---
 
+## Planner evaluation
+
+`python scripts/eval_planners.py` scores both planners on 15 fixed questions
+covering all nine intents, and writes
+[`examples/planner_eval.md`](examples/planner_eval.md) and
+[`planner_eval.json`](examples/planner_eval.json). It plans only — no
+ClinicalTrials.gov calls — so it measures the planners and nothing downstream,
+and the rule half runs offline in under a second.
+
+| Planner | Intent correct | Checks passed | Exact plans |
+| --- | --- | --- | --- |
+| rule | 13/15 (87%) | 39/47 (83%) | 10/15 (67%) |
+| LLM | needs `OPENAI_API_KEY`; reported as "not run" without one | | |
+
+Each question is scored only on the plan fields its intent's operator actually
+reads, plus the filters it asserts, and the operators' own defaults are
+resolved first — an empty `group_by` on a distribution question *is* `phase`,
+so a planner is not marked wrong for a field that cannot change the answer.
+Expectations come from the contract in [`CLAUDE.md`](CLAUDE.md). The intent is
+scored on its own because it alone decides the chart type.
+
+What the rule planner misses, and the LLM planner is there for:
+
+- **Intent from unusual phrasing.** "What is the total number of…" reads as a
+  distribution, not a count; "Is enrollment related to study duration?" is not
+  recognised as a correlation.
+- **Dimensions that are implied, not named.** "industry versus government" is
+  the `sponsor_class` dimension, but falls back to the default `phase`.
+- **Entity boundaries.** It extracts `condition="look like for alzheimer's"`
+  from "What does the distribution of enrollment look like for Alzheimer's
+  trials?" — a search term that would match little. This is the keyword
+  extraction being blunt, and it is why the fallback is flagged low confidence
+  in `notes`.
+
+It gets ten of the fifteen exactly right, which is what a fallback is for; the
+numbers above are the honest size of the gap.
+
+---
+
 ## Design decisions and tradeoffs
 
 The full log, with the evidence for each, is in [`docs/decisions.md`](docs/decisions.md). The main ones:
@@ -357,7 +398,7 @@ carboplatin (274 trials), cisplatin and paclitaxel. Network files are large
 ## Testing
 
 ```bash
-pytest -q        # 467 tests, ~2 s, no network
+pytest -q        # 504 tests, ~2 s, no network
 ```
 
 | Area | What's covered |
@@ -369,6 +410,7 @@ pytest -q        # 467 tests, ~2 s, no network
 | Operators | Hand-checked totals per operator; networks (no self-loops, weights, caps); multi-valued counting |
 | Citations | **Every excerpt appears verbatim in its raw source study** |
 | Planners | Rule planner phrasing; validator merge, overrides, compatibility rules; LLM planner with a mocked client (valid, repaired, fallback) |
+| Planner eval | The question set is well formed: all nine intents covered, every expectation names a field its intent actually reads, a missing plan still counts against the total |
 | End to end | Request → response on fixtures; count uses the API total; comparisons fetch per side; zero matches; HTTP 200/422/502 |
 
 Tests use four saved API responses (`tests/fixtures/`, 400 real studies) so
@@ -401,8 +443,9 @@ known sponsor–drug pairs (Merck ↔ pembrolizumab, BMS ↔ nivolumab).
   maps the spec onto Vega-Lite (charts) and a d3 force layout (networks) and
   computes nothing itself, which is the point: it shows a frontend can render the
   spec without guessing. Libraries are vendored so it works offline.
-- **Planner evaluation** is unit-level plus manual checks; a fixed question set
-  scored for both planners would make accuracy a reported number.
+- **The planner eval is 15 questions, scored on the plan only.** It says nothing
+  about whether the numbers downstream are right (the test suite and the live
+  runs cover that), and 15 questions is a sanity check, not a benchmark.
 
 ---
 

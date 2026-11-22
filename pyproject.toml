@@ -28,7 +28,8 @@ dev = [
 ]
 
 # Installed with `pip install -e ".[dev]"`. Only the `app` package ships;
-# tests/, scripts/ and examples/ are run from the repo root, not imported.
+# tests/, scripts/ and examples/ are run from the repo root (tests/test_eval.py
+# imports scripts/eval_planners.py from there to check its question set).
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
