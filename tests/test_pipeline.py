@@ -154,3 +154,10 @@ def test_schema_and_health(api):
     schema = client.get("/v1/schema").json()
     assert {"request", "response"} <= set(schema)
     assert client.get("/health").json()["status"] == "ok"
+
+
+def test_demo_page_is_served(api):
+    client, _ = api
+    response = client.get("/demo")
+    assert response.status_code == 200
+    assert "/v1/visualize" in response.text

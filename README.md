@@ -43,6 +43,9 @@ cp .env.example .env          # add OPENAI_API_KEY (optional, see below)
 uvicorn app.main:app --reload
 ```
 
+Then open **http://localhost:8000/demo** for a small UI: type a question (or pick an
+example), and click any bar, point, node, edge or row to see the trials behind it.
+
 ```bash
 curl -s localhost:8000/v1/visualize -H 'content-type: application/json' \
   -d '{"query": "How has the number of trials for this drug changed per year since 2015?", "drug_name": "Pembrolizumab"}' | jq
@@ -53,6 +56,7 @@ curl -s localhost:8000/v1/visualize -H 'content-type: application/json' \
 | `POST /v1/visualize` | Question in, visualization spec out |
 | `GET /v1/schema` | The exact request and response JSON Schemas, for frontend engineers |
 | `GET /health` | Liveness, and whether the LLM planner is configured |
+| `GET /demo` | Demo UI that renders every chart type from the response spec, with click-through citations |
 | `GET /docs` | Interactive OpenAPI docs (FastAPI) |
 
 **Configuration** (`.env`, all optional):
@@ -65,7 +69,7 @@ curl -s localhost:8000/v1/visualize -H 'content-type: application/json' \
 | `MAX_STUDIES` | `10000` | Cap on trials pulled per search |
 | `CACHE_DIR` | `.cache` | On-disk cache of API pages |
 
-Run the tests with `pytest -q` (465 tests, about 2 seconds, no network).
+Run the tests with `pytest -q` (467 tests, about 2 seconds, no network).
 Regenerate the example outputs with `python scripts/run_examples.py`.
 
 ---
@@ -99,6 +103,7 @@ Only the dashed step can involve an LLM.
 | Viz builder | `app/viz/builder.py` | A fixed table from question type to chart type, plus encodings, sort orders, units and a templated title. |
 | Citations | `app/citations/attach.py` | Adds `citation_count` and up to 3 citations to every datum, quoting the API record verbatim. |
 | Pipeline / API | `app/pipeline.py`, `app/main.py` | Wires the stages, times each one, assembles `meta` and `notes`. |
+| Demo UI | `app/static/demo.html` | Renders any response: Vega-Lite for charts, d3 for networks, a click shows the citations. |
 
 The contract all modules share (question types, dimensions, chart types, data
 rules, verified API field paths) is written down in [`CLAUDE.md`](CLAUDE.md).
@@ -352,7 +357,7 @@ carboplatin (274 trials), cisplatin and paclitaxel. Network files are large
 ## Testing
 
 ```bash
-pytest -q        # 465 tests, ~2 s, no network
+pytest -q        # 467 tests, ~2 s, no network
 ```
 
 | Area | What's covered |
@@ -392,8 +397,10 @@ known sponsor–drug pairs (Merck ↔ pembrolizumab, BMS ↔ nivolumab).
   planned future start dates; a frontend may want to shade those.
 - **One comparison dimension.** Comparisons are drug vs drug (or condition vs
   condition) by one dimension; multi-dimension comparisons would need a richer plan.
-- **No frontend.** The spec maps directly onto Vega-Lite for the chart types and
-  onto any force-layout library for networks; a small demo page would be next.
+- **The demo UI is deliberately thin.** `app/static/demo.html` is one file that
+  maps the spec onto Vega-Lite (charts) and a d3 force layout (networks) and
+  computes nothing itself, which is the point: it shows a frontend can render the
+  spec without guessing. Libraries are vendored so it works offline.
 - **Planner evaluation** is unit-level plus manual checks; a fixed question set
   scored for both planners would make accuracy a reported number.
 
