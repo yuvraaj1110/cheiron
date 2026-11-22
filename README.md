@@ -70,7 +70,7 @@ curl -s localhost:8000/v1/visualize -H 'content-type: application/json' \
 | `MAX_STUDIES` | `10000` | Cap on trials pulled per search |
 | `CACHE_DIR` | `.cache` | On-disk cache of API pages |
 
-Run the tests with `pytest -q` (504 tests, about 15 seconds, no network).
+Run the tests with `pytest -q` (504 tests, about 2 seconds, no network).
 Regenerate the example outputs with `python scripts/run_examples.py`, and the
 planner scores with `python scripts/eval_planners.py`.
 
@@ -398,7 +398,7 @@ carboplatin (274 trials), cisplatin and paclitaxel. Network files are large
 ## Testing
 
 ```bash
-pytest -q        # 504 tests, ~15 s, no network
+pytest -q        # 504 tests, ~2 s, no network
 ```
 
 | Area | What's covered |
