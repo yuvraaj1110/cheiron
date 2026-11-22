@@ -8,7 +8,7 @@ A backend that takes a plain-English question about clinical trials and returns 
 ```
 POST /v1/visualize  {"query": "Show a network of sponsors and drugs for non-small cell lung cancer trials"}
 → network_graph: 60 nodes, 280 edges from all 8,679 NSCLC trials
-  strongest edges: Eli Lilly ↔ pemetrexed (59 trials), Merck ↔ pembrolizumab (58), BMS ↔ nivolumab (43)
+  strongest edges: Eli Lilly ↔ pemetrexed (59 trials), Merck ↔ pembrolizumab (58), Eli Lilly ↔ cisplatin (45)
   each edge carries the NCT IDs and verbatim API text that put it there
 ```
 
@@ -70,7 +70,7 @@ curl -s localhost:8000/v1/visualize -H 'content-type: application/json' \
 | `MAX_STUDIES` | `10000` | Cap on trials pulled per search |
 | `CACHE_DIR` | `.cache` | On-disk cache of API pages |
 
-Run the tests with `pytest -q` (504 tests, about 2 seconds, no network).
+Run the tests with `pytest -q` (504 tests, about 20 seconds, no network).
 Regenerate the example outputs with `python scripts/run_examples.py`, and the
 planner scores with `python scripts/eval_planners.py`.
 
@@ -398,7 +398,7 @@ carboplatin (274 trials), cisplatin and paclitaxel. Network files are large
 ## Testing
 
 ```bash
-pytest -q        # 504 tests, ~2 s, no network
+pytest -q        # 504 tests, ~20 s, no network
 ```
 
 | Area | What's covered |
