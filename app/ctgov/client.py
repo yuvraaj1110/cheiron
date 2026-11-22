@@ -134,7 +134,7 @@ class CTGovClient:
         reraise=True,  # surface the real error, not tenacity's wrapper
     )
     async def _get_page(self, params: dict) -> dict:
-        """One HTTP GET, retried up to three times on retryable failures."""
+        """One HTTP GET, retried up to RETRY_ATTEMPTS times on retryable failures."""
         if self._client is None:
             # Not an assert: python -O would strip it and we would get an
             # AttributeError on None instead of a sentence that says what to do.

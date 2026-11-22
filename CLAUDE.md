@@ -54,7 +54,7 @@ notes: interpretation, assumptions[], overrides[]
 - protocolSection.contactsLocationsModule.locations[].country / .city / .facility
 
 ## API
-Base https://clinicaltrials.gov/api/v2/studies. Params: query.intr, query.cond, query.spons, query.locn, filter.overallStatus, filter.advanced (AREA[Phase]PHASE3, AREA[StartDate]RANGE[2015-01-01,MAX]), fields (projection), pageSize=1000, pageToken, countTotal=true. Cap at MAX_STUDIES (default 2000).
+Base https://clinicaltrials.gov/api/v2/studies. Params: query.intr, query.cond, query.spons, query.locn, filter.overallStatus, filter.advanced (AREA[Phase]PHASE3, AREA[StartDate]RANGE[2015-01-01,MAX]), fields (projection), pageSize=1000, pageToken, countTotal=true. Cap at MAX_STUDIES (default 10000).
 
 ## Conventions
 - Python 3.11+, Pydantic v2, httpx async, type hints everywhere, no print debugging left in

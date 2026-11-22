@@ -2,6 +2,10 @@
 
 Nov 21, 2026 · @uv
 
+> Historical snapshot, written at batch B2 (commit 118923f) when most of the
+> pipeline had not been built yet. Kept for the design reasoning; for the
+> finished repo read [`../README.md`](../README.md) and [`decisions.md`](decisions.md).
+
 The repo at commit 118923f holds the project contract, config, and four real API fixtures; no pipeline code exists yet.
 
 ## At a glance
