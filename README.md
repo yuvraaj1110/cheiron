@@ -401,12 +401,18 @@ known sponsor–drug pairs (Merck ↔ pembrolizumab, BMS ↔ nivolumab).
 
 ## AI tools used
 
-- **Claude** (chat): architecture brainstorming, the build plan and review of
-  each batch, including live end-to-end checks that found real bugs (capped
-  counts, non-drug interventions in drug networks, the rule planner searching the
-  whole registry, rate limiting).
-- **Claude Code**: wrote most of the implementation in batches, from a written
-  contract (`CLAUDE.md`).
+- **Design and whiteboarding:** I used Claude to explore design ideas and
+  whiteboard the architecture, and to lay out the pros and cons of each approach
+  so I could choose between them: for example, letting the LLM pick the chart vs
+  a fixed table, one schema class per chart vs a shared base, and how to handle
+  capped result sets. The decisions and the evidence behind them are in
+  [`docs/decisions.md`](docs/decisions.md).
+- **Implementation:** Claude Code wrote most of the code in batches, working
+  from a written contract (`CLAUDE.md`) that I kept updated as decisions changed.
+- **Review:** after each batch I ran live end-to-end checks, which found real
+  bugs that were then fixed: capped counts, non-drug interventions in drug
+  networks, the fallback planner searching the whole registry, and API rate
+  limiting.
 
 **What I decided and designed myself:** the plan-only role of the LLM, the
 QueryPlan grammar and dimension catalog, the request/response schemas, the
@@ -418,5 +424,3 @@ real fixtures rather than the docs.
 type; comparing counts with the API's `totalCount`; checking that citation
 excerpts appear verbatim in live records; spot-checking cited NCT IDs on
 clinicaltrials.gov.
-
-*(Review and personalize this section before submitting.)*
