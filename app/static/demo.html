@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trials Viz Demo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<!-- Vendored (vega 5.30.0, vega-lite 5.21.0, vega-embed 6.26.0, d3 7.9.0) so the demo works offline. -->
+<script src="/static/vendor/vega.min.js"></script>
+<script src="/static/vendor/vega-lite.min.js"></script>
+<script src="/static/vendor/vega-embed.min.js"></script>
+<script src="/static/vendor/d3.min.js"></script>
+<style>
+/* A thin renderer for POST /v1/visualize: it only reads the response spec, never computes. */
+:root {
+  --bg: #f5f6f8; --panel: #ffffff; --ink: #17202c; --muted: #5d6779; --line: #d7dce4;
+  --accent: #1f56c4; --accent-soft: #e7eefc; --warn: #a15c00; --warn-soft: #fff4e2;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #10141b; --panel: #171c25; --ink: #e4e8f0; --muted: #98a2b5; --line: #2b3342;
+    --accent: #7da4ff; --accent-soft: #1b2741; --warn: #f0a83c; --warn-soft: #2a2115; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 24px max(16px, env(safe-area-inset-left)); display: grid; gap: 16px; }
+header h1 { margin: 0; font-size: 22px; font-weight: 600; }
+header p { margin: 4px 0 0; color: var(--muted); }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+form { display: grid; gap: 12px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+textarea, input, select, button { font: inherit; color: inherit; }
+textarea { width: 100%; min-height: 56px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); resize: vertical; }
+input, select { padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); min-width: 0; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.fields label { display: grid; gap: 2px; font-size: 12px; color: var(--muted); }
+button { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: #fff; font-weight: 500; cursor: pointer; }
+button.ghost { background: transparent; color: var(--accent); }
+button:disabled { opacity: .5; cursor: wait; }
+button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.examples { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 13px; padding: 4px 10px; border-radius: 99px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer; font-weight: 400; }
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.layout { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+.title { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
+.sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+.badge { display: inline-block; font: 500 12px var(--mono); padding: 1px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); margin-right: 6px; }
+#chart { min-height: 380px; overflow-x: auto; }
+#chart svg { max-width: 100%; }
+.stat { font-size: 64px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat small { display: block; font-size: 15px; font-weight: 400; color: var(--muted); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 500; }
+tr.clickable { cursor: pointer; } tr.clickable:hover { background: var(--accent-soft); }
+.side { display: grid; gap: 16px; }
+.side h3 { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+.notes li { margin-bottom: 6px; font-size: 13px; }
+.notes .warn { background: var(--warn-soft); color: var(--warn); border-radius: 6px; padding: 4px 8px; list-style: none; margin-left: -18px; }
+.cite { border-top: 1px solid var(--line); padding: 8px 0; font-size: 13px; }
+.cite a { color: var(--accent); font-family: var(--mono); font-weight: 500; }
+.cite code { font: 12px var(--mono); background: var(--bg); padding: 1px 4px; border-radius: 4px; word-break: break-all; }
+.muted { color: var(--muted); font-size: 13px; }
+.error { color: #c0392b; }
+details pre { font: 12px var(--mono); background: var(--bg); padding: 12px; border-radius: 8px; overflow: auto; max-height: 420px; }
+.net-link { stroke: var(--line); stroke-opacity: .9; }
+.net-label { font: 11px var(--sans); fill: var(--ink); pointer-events: none; }
+.legend { display: flex; gap: 12px; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>ClinicalTrials.gov question → chart</h1>
+    <p>Ask a question; the backend plans it, pulls live ClinicalTrials.gov data and returns a chart spec. Click any bar, point, node or row to see the trials behind it.</p>
+  </header>
+
+  <form id="form" class="panel">
+    <textarea id="query" placeholder="e.g. Show a network of sponsors and drugs for non-small cell lung cancer trials" required minlength="3"></textarea>
+    <div class="examples" id="examples"></div>
+    <details>
+      <summary class="muted">Optional filters</summary>
+      <div class="fields" style="margin-top:8px">
+        <label>Drug<input id="drug_name" placeholder="Pembrolizumab"></label>
+        <label>Condition<input id="condition" placeholder="Breast cancer"></label>
+        <label>Sponsor<input id="sponsor"></label>
+        <label>Country<input id="country" placeholder="United States"></label>
+        <label>Start year<input id="start_year" type="number" min="1990" max="2035"></label>
+        <label>End year<input id="end_year" type="number" min="1990" max="2035"></label>
+        <label>Compare with (comma-separated)<input id="compare_with" placeholder="nivolumab"></label>
+        <label>Status<select id="status"><option value="">Any</option><option>RECRUITING</option><option>COMPLETED</option><option>ACTIVE_NOT_RECRUITING</option><option>TERMINATED</option><option>NOT_YET_RECRUITING</option></select></label>
+      </div>
+    </details>
+    <div class="row">
+      <button id="go" type="submit">Visualize</button>
+      <span id="status-line" class="muted" style="align-self:center"></span>
+    </div>
+  </form>
+
+  <div class="layout" id="result" hidden>
+    <div class="panel">
+      <p class="title" id="viz-title"></p>
+      <p class="sub" id="viz-sub"></p>
+      <div id="chart"></div>
+    </div>
+    <div class="side">
+      <div class="panel">
+        <h3>Trials behind the selection</h3>
+        <div id="cites" class="muted">Click a bar, point, node, edge or row.</div>
+      </div>
+      <div class="panel notes">
+        <h3>How this was answered</h3>
+        <p class="muted" id="interp"></p>
+        <ul id="notes" style="padding-left:18px;margin:0"></ul>
+      </div>
+      <div class="panel">
+        <details><summary class="muted">Raw JSON response</summary><pre id="raw"></pre></details>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const EXAMPLES = [
+  ["Network: sponsors ↔ drugs (NSCLC)", "Show a network of sponsors and drugs for non-small cell lung cancer trials"],
+  ["Drugs combined with pembrolizumab", "Which drugs frequently co-occur with pembrolizumab in combination studies?"],
+  ["Pembrolizumab per year", "How has the number of pembrolizumab trials changed per year since 2015?"],
+  ["Breast cancer by phase", "How are breast cancer trials distributed across phases?"],
+  ["Pembrolizumab vs nivolumab", "Compare phases for trials involving pembrolizumab vs nivolumab"],
+  ["Diabetes by country", "Which countries have the most recruiting trials for diabetes?"],
+  ["Alzheimer's enrollment", "What is the distribution of enrollment for Alzheimer's disease trials?"],
+  ["How many recruiting", "How many recruiting Alzheimer's disease trials are there?"],
+];
+const $ = (id) => document.getElementById(id);
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+$("examples").innerHTML = EXAMPLES.map(([label], i) => `<button type="button" class="chip" data-i="${i}">${label}</button>`).join("");
+$("examples").addEventListener("click", (e) => {
+  const i = e.target.dataset.i; if (i === undefined) return;
+  $("query").value = EXAMPLES[i][1]; $("form").requestSubmit();
+});
+
+function buildRequest() {
+  const body = { query: $("query").value.trim() };
+  for (const k of ["drug_name", "condition", "sponsor", "country"]) if ($(k).value.trim()) body[k] = $(k).value.trim();
+  for (const k of ["start_year", "end_year"]) if ($(k).value) body[k] = Number($(k).value);
+  if ($("compare_with").value.trim()) body.compare_with = $("compare_with").value.split(",").map(s => s.trim()).filter(Boolean);
+  if ($("status").value) body.status = [$("status").value];
+  return body;
+}
+
+$("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("go").disabled = true; $("status-line").textContent = "Planning and fetching live data…";
+  const t0 = performance.now();
+  try {
+    const res = await fetch("/v1/visualize", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(buildRequest()) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail));
+    render(data);
+    $("status-line").textContent = `Done in ${((performance.now() - t0) / 1000).toFixed(1)}s`;
+  } catch (err) {
+    $("status-line").innerHTML = `<span class="error">Error: ${escapeHtml(err.message)}</span>`;
+  } finally { $("go").disabled = false; }
+});
+
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+function render(resp) {
+  const v = resp.visualization, m = resp.meta, n = resp.notes;
+  $("result").hidden = false;
+  $("viz-title").textContent = v.title;
+  $("viz-sub").innerHTML = `<span class="badge">${v.type}</span>${m.studies_analyzed.toLocaleString()} of ${m.total_matched.toLocaleString()} matching trials analysed · ${escapeHtml(m.viz_rationale)}`;
+  $("interp").textContent = n.interpretation;
+  const notes = [...n.assumptions.map(a => [a, /not a random sample|rule planner|left out|empty/i.test(a)]), ...n.overrides.map(o => ["Override: " + o, true])];
+  $("notes").innerHTML = notes.map(([t, warn]) => `<li class="${warn ? "warn" : ""}">${escapeHtml(t)}</li>`).join("") || "<li>No caveats.</li>";
+  $("raw").textContent = JSON.stringify(resp, null, 2);
+  $("cites").innerHTML = "Click a bar, point, node, edge or row.";
+  const chart = $("chart"); chart.innerHTML = "";
+  if (v.type === "stat") return renderStat(v, chart);
+  if (v.type === "table") return renderTable(v, chart);
+  if (v.type === "network_graph") return renderNetwork(v, chart);
+  renderVega(v, chart);
+}
+
+function showCitations(datum, label) {
+  if (!datum || !datum.citations) return;
+  const head = `<p style="margin:0 0 6px"><b>${escapeHtml(label)}</b><br><span class="muted">${datum.citation_count.toLocaleString()} trials; showing ${datum.citations.length}</span></p>`;
+  $("cites").innerHTML = head + datum.citations.map(c => `
+    <div class="cite"><a href="${c.url}" target="_blank" rel="noopener">${c.nct_id}</a> ${escapeHtml(c.title || "")}<br>
+    <span class="muted">${escapeHtml(c.field)}</span> = <code>${escapeHtml(c.excerpt)}</code></div>`).join("");
+}
+
+function renderStat(v, el) {
+  const row = v.data[0] || {}; const field = v.encoding.y.field;
+  el.innerHTML = `<div class="stat">${(row[field] ?? 0).toLocaleString()}<small>${escapeHtml(v.encoding.y.title)}</small></div>`;
+  showCitations(row, v.title);
+}
+
+function renderTable(v, el) {
+  const cols = v.columns;
+  el.innerHTML = `<table><thead><tr>${cols.map(c => `<th>${escapeHtml(c.title)}</th>`).join("")}</tr></thead><tbody>${
+    v.data.map((r, i) => `<tr class="clickable" data-i="${i}">${cols.map(c => `<td>${escapeHtml(r[c.field] ?? "")}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  el.querySelector("tbody").addEventListener("click", (e) => {
+    const tr = e.target.closest("tr"); if (tr) showCitations(v.data[tr.dataset.i], v.data[tr.dataset.i].nct_id);
+  });
+}
+
+// Encoding channel -> Vega-Lite channel. Years arrive as integers, so a
+// "temporal" year axis is drawn as ordinal to avoid reading them as timestamps.
+function vlChannel(ch) {
+  if (!ch) return undefined;
+  const out = { field: ch.field, title: ch.title + (ch.unit && ch.unit.toLowerCase() !== ch.title.toLowerCase() ? ` (${ch.unit})` : ""), type: ch.type === "temporal" ? "ordinal" : ch.type };
+  if (Array.isArray(ch.sort)) out.sort = ch.sort;
+  else if (typeof ch.sort === "string" && ch.sort.startsWith("-")) out.sort = "-y";
+  return out;
+}
+
+function renderVega(v, el) {
+  const e = v.encoding, opt = v.options || {};
+  const fg = css("--ink"), muted = css("--muted"), line = css("--line"), accent = css("--accent");
+  let mark = "bar", enc = { x: vlChannel(e.x), y: vlChannel(e.y) };
+  if (v.type === "bar_chart" && opt.horizontal) {
+    enc = { y: { ...vlChannel(e.x), sort: "-x" }, x: vlChannel(e.y) };
+  }
+  if (v.type === "grouped_bar_chart") { enc.xOffset = { field: e.series.field }; enc.color = vlChannel(e.series); }
+  if (v.type === "time_series") {
+    mark = { type: "line", point: true };
+    if (e.series) enc.color = vlChannel(e.series);
+  }
+  if (v.type === "histogram") {
+    enc.x = { field: "bin_start", type: "quantitative", title: vlChannel(e.x).title, scale: opt.log_scale ? { type: "symlog" } : {} };
+    enc.x2 = { field: "bin_end" };
+  }
+  if (v.type === "scatter_plot") {
+    mark = { type: "point", filled: true, opacity: 0.6 };
+    if (e.color) enc.color = vlChannel(e.color);
+  }
+  enc.tooltip = Object.values({ x: e.x, y: e.y, s: e.series, c: e.color }).filter(Boolean).map(c => ({ field: c.field, type: c.type === "temporal" ? "ordinal" : c.type, title: c.title }));
+  if (v.type === "histogram") enc.tooltip.push({ field: "bin_end", type: "quantitative", title: "Bin end" });
+  if (!enc.color) mark = typeof mark === "string" ? { type: mark, color: accent } : { ...mark, color: accent };
+
+  const spec = {
+    $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+    // A number, not "container": container sizing collapses to 0 with grouped (xOffset) bars.
+    width: Math.max(280, el.clientWidth - 140), height: v.type === "bar_chart" && opt.horizontal ? { step: 22 } : 360,
+    data: { values: v.data }, mark, encoding: enc,
+    config: {
+      background: null, view: { stroke: null },
+      axis: { labelColor: muted, titleColor: fg, gridColor: line, domainColor: line, tickColor: line, labelFont: "IBM Plex Sans, system-ui, sans-serif", titleFont: "IBM Plex Sans, system-ui, sans-serif", labelLimit: 220 },
+      legend: { labelColor: muted, titleColor: fg, labelFont: "IBM Plex Sans, system-ui, sans-serif", titleFont: "IBM Plex Sans, system-ui, sans-serif" }, range: { category: [accent, "#e07b39", "#2e9e6a", "#9b59b6", "#c0392b"] },
+    },
+  };
+  vegaEmbed(el, spec, { actions: false, renderer: "svg" }).catch((err) => {
+    el.innerHTML = `<p class="error">Could not draw this chart: ${escapeHtml(err.message)}</p>`;
+  }).then((result) => {
+    if (!result) return;
+    const view = result.view;
+    view.addEventListener("click", (_, item) => {
+      if (item && item.datum) {
+        const d = item.datum;
+        const label = [e.series && d[e.series.field], e.x && d[e.x.field], e.y && v.type === "scatter_plot" ? `${e.y.title} ${d[e.y.field]}` : null].filter(x => x !== undefined && x !== null).join(" · ");
+        showCitations(d, label || v.title);
+      }
+    });
+  });
+}
+
+function renderNetwork(v, el) {
+  const nodes = v.data.nodes.map(d => ({ ...d })), links = v.data.edges.map(d => ({ ...d }));
+  if (!nodes.length) { el.innerHTML = `<p class="muted">The graph is empty; see the notes for why.</p>`; return; }
+  const width = el.clientWidth || 700, height = 520;
+  const types = [...new Set(nodes.map(d => d.type))];
+  const palette = [css("--accent"), "#e07b39", "#2e9e6a"];
+  const color = d3.scaleOrdinal(types, palette);
+  const r = d3.scaleSqrt().domain([0, d3.max(nodes, d => d.weight)]).range([4, 22]);
+  const w = d3.scaleLinear().domain([0, d3.max(links, d => d.weight) || 1]).range([1, 8]);
+
+  el.innerHTML = `<div class="legend">${types.map(t => `<span><i style="background:${color(t)}"></i>${t}</span>`).join("")}<span>· node size = trials · line width = shared trials</span></div>`;
+  const svg = d3.select(el).append("svg").attr("viewBox", [0, 0, width, height]).attr("width", "100%");
+  const g = svg.append("g");
+  svg.call(d3.zoom().scaleExtent([0.3, 4]).on("zoom", (ev) => g.attr("transform", ev.transform)));
+
+  const sim = d3.forceSimulation(nodes)
+    .force("link", d3.forceLink(links).id(d => d.id).distance(90).strength(0.4))
+    .force("charge", d3.forceManyBody().strength(-160))
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    .force("collide", d3.forceCollide(d => r(d.weight) + 3));
+
+  const link = g.append("g").selectAll("line").data(links).join("line")
+    .attr("class", "net-link").attr("stroke-width", d => w(d.weight)).style("cursor", "pointer")
+    .on("click", (_, d) => showCitations(d, `${d.source.label} ↔ ${d.target.label} (${d.weight} trials)`));
+  link.append("title").text(d => `${d.source.label || d.source} ↔ ${d.target.label || d.target}: ${d.weight} trials`);
+
+  const node = g.append("g").selectAll("circle").data(nodes).join("circle")
+    .attr("r", d => r(d.weight)).attr("fill", d => color(d.type)).attr("stroke", css("--panel")).attr("stroke-width", 1.5)
+    .style("cursor", "pointer")
+    .on("click", (_, d) => showCitations(d, `${d.label} (${d.type}, ${d.weight} trials)`))
+    .call(d3.drag()
+      .on("start", (ev, d) => { if (!ev.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+      .on("drag", (ev, d) => { d.fx = ev.x; d.fy = ev.y; })
+      .on("end", (ev, d) => { if (!ev.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
+  node.append("title").text(d => `${d.label}: ${d.weight} trials`);
+
+  const topIds = new Set([...nodes].sort((a, b) => b.weight - a.weight).slice(0, 18).map(d => d.id));
+  const label = g.append("g").selectAll("text").data(nodes.filter(d => topIds.has(d.id))).join("text")
+    .attr("class", "net-label").attr("dx", d => r(d.weight) + 3).attr("dy", 4).text(d => d.label.length > 28 ? d.label.slice(0, 26) + "…" : d.label);
+
+  sim.on("tick", () => {
+    link.attr("x1", d => d.source.x).attr("y1", d => d.source.y).attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+    node.attr("cx", d => d.x).attr("cy", d => d.y);
+    label.attr("x", d => d.x).attr("y", d => d.y);
+  });
+}
+</script>
+</body>
+</html>

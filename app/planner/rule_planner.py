@@ -166,7 +166,7 @@ STOP_WORDS = {
     "show", "list", "me", "recruiting", "completed", "active", "phase", "trials", "studies", "number",
     "has", "have", "do", "does", "there", "most", "top", "clinical", "involving", "compare", "this", "drug",
     "plot", "distribution", "network", "sponsors", "drugs", "and", "countries", "frequently", "co-occur",
-    "changed", "started", "distributed", "combination", "each", "year", "per", "running", "conducted", "run",
+    "changed", "started", "distributed", "combination", "enrollment", "duration", "size", "each", "year", "per", "running", "conducted", "run",
 }
 DRUG_SUFFIXES = ("mab", "nib", "lib", "tide", "parin", "statin", "cillin", "mycin", "vir", "zole",
                  "pril", "sartan", "olol", "platin", "taxel", "rubicin", "mide", "fene", "gliptin", "glutide")

@@ -17,6 +17,7 @@ request -> planner (LLM or rule fallback) -> validator/merger -> compiler (plan 
 - app/analytics/operators.py
 - app/viz/builder.py
 - app/citations/attach.py
+- app/pipeline.py: wires the stages; app/static/demo.html: thin UI at /demo (vendored vega/d3)
 - app/settings.py: every config value, read from .env (pydantic-settings)
 - scripts/fetch_fixtures.py: one-off script that downloads the fixtures below
 - scripts/eval_planners.py: scores both planners on 15 fixed questions (plans only, no API calls);
@@ -62,7 +63,8 @@ Base https://clinicaltrials.gov/api/v2/studies. Params: query.intr, query.cond, 
 ## Conventions
 - Python 3.11+, Pydantic v2, httpx async, type hints everywhere, no print debugging left in
 - LLM: OpenAI structured outputs (AsyncOpenAI, model from settings.planner_model, temperature 0).
-  The response_format IS the QueryPlan model, so the SDK validates the shape before we see it.
+  Strict mode rejects some schema keywords, so a relaxed copy of the QueryPlan schema is sent and
+  the reply is re-validated with the real QueryPlan.
   No other provider SDK in the project.
 - Tests: pytest, run `pytest -q -x`; unit tests use fixtures, never the live API
 - Keep functions small and pure in analytics/ and viz/

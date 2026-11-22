@@ -4,9 +4,12 @@ Run: uvicorn app.main:app --reload
 """
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import httpx
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.schemas import VisualizationRequest, VisualizationResponse
 from app.ctgov.client import CTGovClient
@@ -28,6 +31,22 @@ app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+
+STATIC_DIR = Path(__file__).parent / "static"
+DEMO_PAGE = STATIC_DIR / "demo.html"
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+
+@app.get("/", include_in_schema=False)
+async def root() -> RedirectResponse:
+    return RedirectResponse("/demo")
+
+
+@app.get("/demo", include_in_schema=False)
+async def demo() -> FileResponse:
+    """A small renderer for the response spec. It only draws; it computes nothing."""
+    return FileResponse(DEMO_PAGE)
 
 
 @app.get("/health")

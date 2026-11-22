@@ -44,6 +44,9 @@ cp .env.example .env          # add OPENAI_API_KEY (optional, see below)
 uvicorn app.main:app --reload
 ```
 
+Then open **http://localhost:8000/demo** for a small UI: type a question (or pick an
+example), and click any bar, point, node, edge or row to see the trials behind it.
+
 ```bash
 curl -s localhost:8000/v1/visualize -H 'content-type: application/json' \
   -d '{"query": "How has the number of trials for this drug changed per year since 2015?", "drug_name": "Pembrolizumab"}' | jq
@@ -54,6 +57,7 @@ curl -s localhost:8000/v1/visualize -H 'content-type: application/json' \
 | `POST /v1/visualize` | Question in, visualization spec out |
 | `GET /v1/schema` | The exact request and response JSON Schemas, for frontend engineers |
 | `GET /health` | Liveness, and whether the LLM planner is configured |
+| `GET /demo` | Demo UI that renders every chart type from the response spec, with click-through citations |
 | `GET /docs` | Interactive OpenAPI docs (FastAPI) |
 
 **Configuration** (`.env`, all optional):
@@ -66,7 +70,7 @@ curl -s localhost:8000/v1/visualize -H 'content-type: application/json' \
 | `MAX_STUDIES` | `10000` | Cap on trials pulled per search |
 | `CACHE_DIR` | `.cache` | On-disk cache of API pages |
 
-Run the tests with `pytest -q` (502 tests, about 2 seconds, no network).
+Run the tests with `pytest -q` (504 tests, about 2 seconds, no network).
 Regenerate the example outputs with `python scripts/run_examples.py`, and the
 planner scores with `python scripts/eval_planners.py`.
 
@@ -101,6 +105,7 @@ Only the dashed step can involve an LLM.
 | Viz builder | `app/viz/builder.py` | A fixed table from question type to chart type, plus encodings, sort orders, units and a templated title. |
 | Citations | `app/citations/attach.py` | Adds `citation_count` and up to 3 citations to every datum, quoting the API record verbatim. |
 | Pipeline / API | `app/pipeline.py`, `app/main.py` | Wires the stages, times each one, assembles `meta` and `notes`. |
+| Demo UI | `app/static/demo.html` | Renders any response: Vega-Lite for charts, d3 for networks, a click shows the citations. |
 
 The contract all modules share (question types, dimensions, chart types, data
 rules, verified API field paths) is written down in [`CLAUDE.md`](CLAUDE.md).
@@ -318,11 +323,11 @@ What the rule planner misses, and the LLM planner is there for:
   recognised as a correlation.
 - **Dimensions that are implied, not named.** "industry versus government" is
   the `sponsor_class` dimension, but falls back to the default `phase`.
-- **Entity boundaries.** It extracts `condition="enrollment look like for
-  alzheimer's"` from "What does the distribution of enrollment look like for
-  Alzheimer's trials?" — a search term that would match little. This is the
-  keyword extraction being blunt, and it is why the fallback is flagged low
-  confidence in `notes`.
+- **Entity boundaries.** It extracts `condition="look like for alzheimer's"`
+  from "What does the distribution of enrollment look like for Alzheimer's
+  trials?" — a search term that would match little. This is the keyword
+  extraction being blunt, and it is why the fallback is flagged low confidence
+  in `notes`.
 
 It gets ten of the fifteen exactly right, which is what a fallback is for; the
 numbers above are the honest size of the gap.
@@ -393,7 +398,7 @@ carboplatin (274 trials), cisplatin and paclitaxel. Network files are large
 ## Testing
 
 ```bash
-pytest -q        # 502 tests, ~2 s, no network
+pytest -q        # 504 tests, ~2 s, no network
 ```
 
 | Area | What's covered |
@@ -434,8 +439,10 @@ known sponsor–drug pairs (Merck ↔ pembrolizumab, BMS ↔ nivolumab).
   planned future start dates; a frontend may want to shade those.
 - **One comparison dimension.** Comparisons are drug vs drug (or condition vs
   condition) by one dimension; multi-dimension comparisons would need a richer plan.
-- **No frontend.** The spec maps directly onto Vega-Lite for the chart types and
-  onto any force-layout library for networks; a small demo page would be next.
+- **The demo UI is deliberately thin.** `app/static/demo.html` is one file that
+  maps the spec onto Vega-Lite (charts) and a d3 force layout (networks) and
+  computes nothing itself, which is the point: it shows a frontend can render the
+  spec without guessing. Libraries are vendored so it works offline.
 - **The planner eval is 15 questions, scored on the plan only.** It says nothing
   about whether the numbers downstream are right (the test suite and the live
   runs cover that), and 15 questions is a sanity check, not a benchmark.

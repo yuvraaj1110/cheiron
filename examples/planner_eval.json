@@ -388,10 +388,10 @@
             {
               "check": "condition",
               "expected": "alzheimer's",
-              "actual": "enrollment look like for alzheimer's"
+              "actual": "look like for alzheimer's"
             }
           ],
-          "interpretation": "Rule-based reading: histogram of trials, condition enrollment look like for Alzheimer's."
+          "interpretation": "Rule-based reading: histogram of trials, condition look like for Alzheimer's."
         },
         {
           "id": "q15_correlation",

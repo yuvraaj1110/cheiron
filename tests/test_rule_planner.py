@@ -117,3 +117,8 @@ def test_mentioned_dimensions_in_order_of_appearance():
         Dimension.country,
         Dimension.phase,
     ]
+
+
+def test_histogram_question_finds_the_condition_not_the_measure():
+    plan = plan_for("What is the distribution of enrollment for Alzheimer's disease trials?")
+    assert plan.filters.condition == "Alzheimer's disease"
